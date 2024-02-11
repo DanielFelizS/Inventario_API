@@ -5,7 +5,7 @@ using Inventario.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
-
+ 
 namespace Inventario.Controllers
 {
     [Route("api/dispositivos")]
@@ -22,24 +22,33 @@ namespace Inventario.Controllers
         
         [AllowAnonymous]
         [HttpGet(Name = "GetDispositivos")]
-        public async Task<ActionResult<IEnumerable<Dispositivo>>> GetDispositivos()
+        public async Task<ActionResult<PaginatedList<Dispositivo>>> GetDispositivos(int pageNumber = 1, int pageSize = 6)
         {
-            var dispositivos = await _context.Dispositivos.ToListAsync();
+            var allDispositivos = await _context.Dispositivos.ToListAsync();
+            
+            var totalCount = allDispositivos.Count;
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // Calcula el total de elementos
-            var total = dispositivos.Count;
+            var paginatedDispositivos = allDispositivos.Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var paginatedList = new PaginatedList<Dispositivo>
+            {
+                Items = paginatedDispositivos,
+                TotalCount = totalCount,
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
 
             // Agrega el encabezado 'X-Total-Count' a la respuesta
-            // Response.Headers.Append("X-Total-Count", total.ToString());
-            // o
-            Response.Headers["X-Total-Count"] = total.ToString();
-
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
             // Exponer el encabezado 'X-Total-Count'
             Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
-
-            return dispositivos;
+            
+            return paginatedList;
         }
-
         [AllowAnonymous]
         [HttpGet("{id}", Name = "GetDispositivo")]
         public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)

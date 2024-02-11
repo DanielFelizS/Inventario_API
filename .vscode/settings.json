@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin\\Release\\net8.0\\publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/1a845e7e-a338-4d5b-bbb0-013c5900e0e1/resourceGroups/appsvc_windows_centralus/providers/Microsoft.Web/sites/Devices-inventary"
+}
