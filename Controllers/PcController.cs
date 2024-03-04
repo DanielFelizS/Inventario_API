@@ -8,33 +8,32 @@ using Inventario.Controllers;
 
 namespace Inventario.Controllers
 {
-    [Route("api/dispositivos")]
-    public class DispositivoController : Controller
+    [Route("api/computer")]
+    public class PcController : Controller
     {
-        private readonly ILogger<DispositivoController> _logger;
+        private readonly ILogger<PcController> _logger;
         private readonly DataContext _context;
         
-        public DispositivoController(ILogger<DispositivoController> logger, DataContext context)
+        public PcController(ILogger<PcController> logger, DataContext context)
         {
             _logger = logger;
             _context = context;
         }
-        [AllowAnonymous]
-        [HttpGet(Name = "GetDispositivos")]
-        public async Task<ActionResult<PaginatedList<Dispositivo>>> GetDispositivos(int id, int pageNumber = 1, int pageSize = 6)
+        [HttpGet(Name = "GetComputers"), AllowAnonymous]
+        public async Task<ActionResult<PaginatedList<PC>>> GetComputers(int id, int pageNumber = 1, int pageSize = 6)
         {
 
-            var datos = await _context.Dispositivos.FindAsync(id);
+            var datos = await _context.Computer.FindAsync(id);
 
-            var allDispositivos = await _context.Dispositivos.ToListAsync();
-            var totalCount = allDispositivos.Count;
+            var allComputer = await _context.Computer.ToListAsync();
+            var totalCount = allComputer.Count;
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var paginatedDispositivos = allDispositivos.Skip((pageNumber - 1) * pageSize)
+            var paginatedComputer = allComputer.Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-            var paginatedList = new PaginatedList<Dispositivo>
+            var paginatedList = new PaginatedList<PC>
             {
-                Items = paginatedDispositivos,
+                Items = paginatedComputer,
                 TotalCount = totalCount,
                 PageIndex = pageNumber,
                 PageSize = pageSize,
@@ -48,28 +47,28 @@ namespace Inventario.Controllers
             
             return paginatedList;
         }
-        [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
-        public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)
+        [HttpGet("{id}", Name = "GetComputer"), Authorize]
+        public async Task<ActionResult<PC>> GetComputer(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
-            if (dispositivo == null)
+            var computer = await _context.Computer.FindAsync(id);
+            if (computer == null)
             {
                 return NotFound();
             }
 
-            return dispositivo;
+            return computer;
         }
         [HttpPost, Authorize]
-        public async Task<IActionResult> saveInformation([FromBody] Dispositivo dispositivo)
+        public async Task<IActionResult> saveInformation([FromBody] PC computer)
         {
             if (ModelState.IsValid)
             {
                 // Agregar el departamento al contexto y guardar los cambios en la base de datos
-                _context.Dispositivos.Add(dispositivo);
+                _context.Computer.Add(computer);
                 await _context.SaveChangesAsync();
 
-                // Devolver una respuesta CreatedAtRoute con el dispositivo creado
-                return CreatedAtRoute("Getdispositivo", new { id = dispositivo.Id }, dispositivo);
+                // Devolver una respuesta CreatedAtRoute con el computer creado
+                return CreatedAtRoute("GetComputer", new { id = computer.Id }, computer);
             }
 
             // Si el modelo no es válido, devolver una respuesta BadRequest
@@ -77,9 +76,9 @@ namespace Inventario.Controllers
         }
 
         [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] Dispositivo dispositivo)
+        public async Task<IActionResult> Put(int id, [FromBody] PC computer)
         {
-            if (id != dispositivo?.Id)
+            if (id != computer?.Id)
             {
                 return BadRequest("No se encontró el ID");
             }
@@ -91,7 +90,7 @@ namespace Inventario.Controllers
 
             try
             {
-                _context.Update(dispositivo);
+                _context.Update(computer);
                 await _context.SaveChangesAsync();
                 return Ok("Se actualizó correctamente");
             }
@@ -101,18 +100,18 @@ namespace Inventario.Controllers
             }
         }
         [HttpDelete("{id}"), Authorize]
-        public async Task<ActionResult<Dispositivo>> Delete(int id)
+        public async Task<ActionResult<PC>> Delete(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
-            if (dispositivo == null)
+            var computer = await _context.Computer.FindAsync(id);
+            if (computer == null)
             {
                 return NotFound();
             }
 
-            _context.Dispositivos.Remove(dispositivo);
+            _context.Computer.Remove(computer);
             await _context.SaveChangesAsync();
 
-            return dispositivo;
+            return computer;
         }
     }
 }

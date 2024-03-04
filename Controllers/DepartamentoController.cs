@@ -8,33 +8,33 @@ using Inventario.Controllers;
 
 namespace Inventario.Controllers
 {
-    [Route("api/dispositivos")]
-    public class DispositivoController : Controller
+    [Route("api/departamento")]
+    public class DepartamentoController : Controller
     {
-        private readonly ILogger<DispositivoController> _logger;
+        private readonly ILogger<DepartamentoController> _logger;
         private readonly DataContext _context;
         
-        public DispositivoController(ILogger<DispositivoController> logger, DataContext context)
+        public DepartamentoController(ILogger<DepartamentoController> logger, DataContext context)
         {
             _logger = logger;
             _context = context;
         }
-        [AllowAnonymous]
-        [HttpGet(Name = "GetDispositivos")]
-        public async Task<ActionResult<PaginatedList<Dispositivo>>> GetDispositivos(int id, int pageNumber = 1, int pageSize = 6)
+        [HttpGet(Name = "GetDepartamentos"), AllowAnonymous]
+        public async Task<ActionResult<PaginatedList<Departamento>>> GetDepartamentos(int id, int pageNumber = 1, int pageSize = 6)
         {
-
             var datos = await _context.Dispositivos.FindAsync(id);
-
-            var allDispositivos = await _context.Dispositivos.ToListAsync();
-            var totalCount = allDispositivos.Count;
+            var allDepartamento = await _context.departamento.ToListAsync();
+            var totalCount = allDepartamento.Count;
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var paginatedDispositivos = allDispositivos.Skip((pageNumber - 1) * pageSize)
+            // var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var paginatedDepartamento = allDepartamento.Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-            var paginatedList = new PaginatedList<Dispositivo>
+
+            var paginatedList = new PaginatedList<Departamento>
             {
-                Items = paginatedDispositivos,
+                Items = paginatedDepartamento,
                 TotalCount = totalCount,
                 PageIndex = pageNumber,
                 PageSize = pageSize,
@@ -48,50 +48,50 @@ namespace Inventario.Controllers
             
             return paginatedList;
         }
-        [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
-        public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)
+        [HttpGet("{id}", Name = "GetDepartamento"), Authorize]
+        public async Task<ActionResult<Departamento>> GetDepartamento(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
-            if (dispositivo == null)
+            var departamento = await _context.departamento.FindAsync(id);
+
+            if (departamento == null)
             {
                 return NotFound();
             }
 
-            return dispositivo;
+            return departamento;
         }
         [HttpPost, Authorize]
-        public async Task<IActionResult> saveInformation([FromBody] Dispositivo dispositivo)
+        public async Task<IActionResult> saveInformation([FromBody] Departamento departamento)
         {
             if (ModelState.IsValid)
             {
                 // Agregar el departamento al contexto y guardar los cambios en la base de datos
-                _context.Dispositivos.Add(dispositivo);
+                _context.departamento.Add(departamento);
                 await _context.SaveChangesAsync();
 
                 // Devolver una respuesta CreatedAtRoute con el dispositivo creado
-                return CreatedAtRoute("Getdispositivo", new { id = dispositivo.Id }, dispositivo);
+                return CreatedAtRoute("GetDepartamento", new { id = departamento.Id }, departamento);
             }
 
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-
         [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] Dispositivo dispositivo)
+        public async Task<IActionResult> Put(int id, [FromBody] Departamento departamento)
         {
-            if (id != dispositivo?.Id)
+            if (id != departamento?.Id)
             {
                 return BadRequest("No se encontró el ID");
             }
 
-            else if (!ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
             try
             {
-                _context.Update(dispositivo);
+                _context.Update(departamento);
                 await _context.SaveChangesAsync();
                 return Ok("Se actualizó correctamente");
             }
@@ -101,18 +101,19 @@ namespace Inventario.Controllers
             }
         }
         [HttpDelete("{id}"), Authorize]
-        public async Task<ActionResult<Dispositivo>> Delete(int id)
+        public async Task<ActionResult<Departamento>> Delete(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
-            if (dispositivo == null)
+            var departamento = await _context.departamento.FindAsync(id);
+
+            if (departamento== null)
             {
                 return NotFound();
             }
 
-            _context.Dispositivos.Remove(dispositivo);
+            _context.departamento.Remove(departamento);
             await _context.SaveChangesAsync();
 
-            return dispositivo;
+            return departamento;
         }
     }
 }

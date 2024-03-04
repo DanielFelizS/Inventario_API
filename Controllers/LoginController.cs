@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Inventario.Authorization;
 
 namespace Inventario.Controllers
 {
@@ -35,7 +36,6 @@ namespace Inventario.Controllers
             }
 
             string username = model.Username;
-            string password = model.Password;
             string userRol = model.userRol;
 
             if (!ValidateUser(userRol))
@@ -43,51 +43,21 @@ namespace Inventario.Controllers
                 return Unauthorized();
             }
 
-            string token = GenerateToken(username, userRol); // Generar el token
+            string token = Token.GenerateTokenJwt(username, _configuration["JwtSettings:Secret"]); // Generar el token
 
             return Ok(new { token });
         }
 
         private bool ValidateUser(string userRol)
         {
-            if (userRol == "admin")
-            {
-                return true;
-            }
-
-            else{
-                return false;
-            }
-            // return true;
+            return !string.IsNullOrEmpty(userRol); // Si el rol no es nulo ni vacío, considerarlo válido
         }
 
-        private string GenerateToken(string username, string userRol)
+        public class LoginRequestModel
         {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, username),
-                new Claim(ClaimTypes.Role, userRol),
-                // Agrega otras claims si es necesario
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["JwtSettings:ExpirationHours"])),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            public string Username { get; set; }
+            public string Password { get; set; }
+            public string userRol { get; set; }
         }
-    }
-
-    public class LoginRequestModel
-    {
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string userRol { get; set; }
     }
 }

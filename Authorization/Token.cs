@@ -3,13 +3,15 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
+namespace Inventario.Authorization
+{
 public class Token
 {
     public static string GenerateTokenJwt(string username, string secretKey)
     {
-        var audienceToken = "http://localhost:5173";
-        var issuerToken = "http://localhost:5173";
-        var expireTime = "30";
+        var audienceToken = "http://localhost:5198/"; // URL de tu aplicación en producción
+        var issuerToken = "http://localhost:5173/"; // URL de tu aplicación en producción
+        var expireTime = "60"; // Token válido por 1 hora
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
@@ -29,4 +31,6 @@ public class Token
         var jwtTokenString = tokenHandler.WriteToken(jwtSecurityToken);
         return jwtTokenString;
     }
+
+}
 }
