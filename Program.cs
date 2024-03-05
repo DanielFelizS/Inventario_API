@@ -13,6 +13,7 @@ using System.Text;
 using Inventario.Authorization;
 using Swashbuckle.AspNetCore.Filters;
 using Microsoft.OpenApi.Models;
+using Inventario.AutoMapperConfig;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
+
+builder.Services.AddAutoMapper(typeof(AutoMapperConfigProfile));
 builder.Services.AddDbContext<ApplicationDbContext>(
     options => options.UseInMemoryDatabase("MemoryDB"));
 
@@ -54,7 +57,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddScoped<LoginController>();
 
-// builder.Services.AddAuthorization();
+builder.Services.AddAuthorization();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
         {
             options.Authority = "http://localhost:5173"; // Servidor Local de React para autenticar el token

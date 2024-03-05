@@ -17,11 +17,17 @@ namespace Inventario.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // modelBuilder.Entity<Dispositivo>()
-            //     .HasOne(d => d.departamento)
-            //     .WithMany(dpto => dpto.Dispositivos)
-            //     .HasForeignKey(d => d.DepartamentoId);
-                // .HasConstraintName("FK_Departamento");
+            modelBuilder.Entity<Dispositivo>()
+                .HasOne(d => d.departamento)
+                .WithMany(dpto => dpto.Dispositivos)
+                .HasForeignKey(d => d.DepartamentoId)
+                .HasConstraintName("FK_Departamento");
+
+            modelBuilder.Entity<PC>()
+                .HasOne(d => d.Dispositivos)
+                .WithMany(dpto => dpto.Computer)
+                .HasForeignKey(d => d.Equipo_Id)
+                .HasConstraintName("FK_Dispositivo");
 
             modelBuilder.Entity<Dispositivo>()
                 .HasIndex(d => d.Serial_no)

@@ -1,9 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "SjU/YawI73ROgjv6bIk3/F3RCQtfHI+zNMU8pcqi3qJs9kKCMEmAa3XHxV59MBsX7hVIm8L8hq7IjXYJ3B9uVQ==",
+  "dgSpecHash": "/4l2nBMEGHxrBvLjsAWEvA7HJItp1/jvTHpjl+yrJBLfWq3uWiimPMqaHc5HQGV8OOKq4dzRcRuiI/OAUjmSrg==",
   "success": true,
   "projectFilePath": "C:\\Users\\A19A05048\\Desktop\\PROGRAMACION\\.NET\\API_REST\\Inventario\\Inventario.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\A19A05048\\.nuget\\packages\\automapper\\12.0.1\\automapper.12.0.1.nupkg.sha512",
+    "C:\\Users\\A19A05048\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\12.0.1\\automapper.extensions.microsoft.dependencyinjection.12.0.1.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
@@ -79,6 +81,7 @@
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.codeanalysis.razor\\6.0.24\\microsoft.codeanalysis.razor.6.0.24.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.codeanalysis.scripting.common\\4.8.0-3.final\\microsoft.codeanalysis.scripting.common.4.8.0-3.final.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.codeanalysis.workspaces.common\\4.8.0-3.final\\microsoft.codeanalysis.workspaces.common.4.8.0-3.final.nupkg.sha512",
+    "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.csharp\\4.7.0\\microsoft.csharp.4.7.0.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.data.sqlclient\\5.1.1\\microsoft.data.sqlclient.5.1.1.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.data.sqlclient.sni.runtime\\5.1.0\\microsoft.data.sqlclient.sni.runtime.5.1.0.nupkg.sha512",
     "C:\\Users\\A19A05048\\.nuget\\packages\\microsoft.diasymreader\\2.0.0\\microsoft.diasymreader.2.0.0.nupkg.sha512",

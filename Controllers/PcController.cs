@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
+using Inventario.DTOs;
 using Inventario.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
+using Inventario.AutoMapperConfig;
+using AutoMapper;
 
 namespace Inventario.Controllers
 {
@@ -13,14 +16,16 @@ namespace Inventario.Controllers
     {
         private readonly ILogger<PcController> _logger;
         private readonly DataContext _context;
+        private readonly IMapper _mapper;
         
-        public PcController(ILogger<PcController> logger, DataContext context)
+        public PcController(ILogger<PcController> logger, DataContext context, IMapper mapper)
         {
             _logger = logger;
             _context = context;
+            _mapper = mapper;
         }
         [HttpGet(Name = "GetComputers"), AllowAnonymous]
-        public async Task<ActionResult<PaginatedList<PC>>> GetComputers(int id, int pageNumber = 1, int pageSize = 6)
+        public async Task<ActionResult<PaginatedList<PCDTO>>> GetComputers(int id, int pageNumber = 1, int pageSize = 6)
         {
 
             var datos = await _context.Computer.FindAsync(id);
@@ -31,9 +36,11 @@ namespace Inventario.Controllers
             var paginatedComputer = allComputer.Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-            var paginatedList = new PaginatedList<PC>
+            var ComputersDTO = _mapper.Map<List<PCDTO>>(paginatedComputer);
+
+            var paginatedList = new PaginatedList<PCDTO>
             {
-                Items = paginatedComputer,
+                Items = ComputersDTO,
                 TotalCount = totalCount,
                 PageIndex = pageNumber,
                 PageSize = pageSize,
@@ -59,16 +66,17 @@ namespace Inventario.Controllers
             return computer;
         }
         [HttpPost, Authorize]
-        public async Task<IActionResult> saveInformation([FromBody] PC computer)
+        public async Task<IActionResult> saveInformation([FromBody] PCDTO computer)
         {
             if (ModelState.IsValid)
             {
                 // Agregar el departamento al contexto y guardar los cambios en la base de datos
-                _context.Computer.Add(computer);
+                PC newComputer = _mapper.Map<PC>(computer);
+                _context.Computer.Add(newComputer);
                 await _context.SaveChangesAsync();
 
                 // Devolver una respuesta CreatedAtRoute con el computer creado
-                return CreatedAtRoute("GetComputer", new { id = computer.Id }, computer);
+                return CreatedAtRoute("GetComputer", new { id = computer.Id }, newComputer);
             }
 
             // Si el modelo no es válido, devolver una respuesta BadRequest
@@ -76,7 +84,7 @@ namespace Inventario.Controllers
         }
 
         [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] PC computer)
+        public async Task<IActionResult> Put(int id, [FromBody] PCDTO computer)
         {
             if (id != computer?.Id)
             {
@@ -90,7 +98,8 @@ namespace Inventario.Controllers
 
             try
             {
-                _context.Update(computer);
+                PC newComputer = _mapper.Map<PC>(computer);
+                _context.Update(newComputer);
                 await _context.SaveChangesAsync();
                 return Ok("Se actualizó correctamente");
             }

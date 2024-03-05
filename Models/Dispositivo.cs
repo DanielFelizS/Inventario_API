@@ -8,10 +8,10 @@ namespace Inventario.Models
 {
     public partial class Dispositivo
     {
-        public Dispositivo()
-        {
-            Computer = new HashSet<PC>();
-        }
+        // public Dispositivo()
+        // {
+        //     Computer = new HashSet<PC>();
+        // }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
@@ -49,7 +49,7 @@ namespace Inventario.Models
         // Relación entre el nombre del departamento y la clase Dispositivos
         public int DepartamentoId{ get; set; }
 
-        // public Departamento departamento {get; set;}
+        public Departamento departamento {get; set;}
         // public PC Computer {get; set;}
 
         public virtual ICollection<PC> Computer { get; set; }

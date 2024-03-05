@@ -8,10 +8,10 @@ namespace Inventario.Models
 {
     public class Departamento
     {
-        public Departamento()
-        {
-            Dispositivos = new HashSet<Dispositivo>();
-        }
+        // public Departamento()
+        // {
+        //     Dispositivos = new HashSet<Dispositivo>();
+        // }
 
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
