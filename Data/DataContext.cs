@@ -13,8 +13,7 @@ namespace Inventario.Data
         public DbSet<Dispositivo> Dispositivos { get; set; }
         public DbSet<Departamento> departamento { get; set; }
         public DbSet<PC> Computer {get; set;}
-        public DbSet<User> usuarios { get; set; }
-
+        // public DbSet<User> usuarios { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,9 +80,9 @@ namespace Inventario.Data
                 .HasIndex(d => d.MotherBoard)
                 .HasFilter("[MotherBoard] IS NOT NULL AND [MotherBoard]<> 'No Tiene'");
             
-            modelBuilder.Entity<User>()
-                .HasIndex(d => d.Email)
-                .IsUnique();
+            // modelBuilder.Entity<User>()
+            //     .HasIndex(d => d.Email)
+            //     .IsUnique();
         }
     }
 }

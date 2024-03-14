@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
+using Inventario.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
@@ -34,7 +35,7 @@ namespace Inventario.Controllers
 
         }
         [AllowAnonymous]
-        [HttpGet(Name = "GetDispositivos")]
+        [HttpGet(Name = "GetDispositivos"), Authorize]
         public async Task<ActionResult<PaginatedList<DispositivoDTO>>> GetDispositivos(int id, int pageNumber = 1, int pageSize = 6)
         {
             var allDispositivos = await _context.Dispositivos.ToListAsync();
@@ -63,6 +64,7 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
         [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
         public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)
         {
@@ -74,6 +76,7 @@ namespace Inventario.Controllers
 
             return dispositivo;
         }
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
         [HttpPost, Authorize]
         public async Task<IActionResult> saveInformation([FromBody] DispositivoDTO dispositivo)
         {
@@ -91,6 +94,7 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
         [HttpPut("{id}"), Authorize]
         public async Task<IActionResult> Put(int id, [FromBody] DispositivoDTO dispositivo)
         {
@@ -116,6 +120,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
         [HttpDelete("{id}"), Authorize]
         public async Task<ActionResult<Dispositivo>> Delete(int id)
         {
@@ -130,6 +135,7 @@ namespace Inventario.Controllers
 
             return dispositivo;
         }
+        [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDispositivos")]
         public async Task<IActionResult> DescargarPDF(int id)
         {

@@ -2,62 +2,84 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.ComponentModel.DataAnnotations;
+using Inventario.Authorization;
+using Inventario.DTOs;
+using Inventario.Interface;
+using Inventario.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Inventario.Authorization;
 
 namespace Inventario.Controllers
 {
     [ApiController]
-    [Route("api/login")]
+    [Route("api/")]
     public class LoginController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
+        private readonly IAuthService _authService;
 
-        public LoginController(IConfiguration configuration)
+        public LoginController(IAuthService authService)
         {
-            _configuration = configuration;
+            _authService = authService;
         }
 
-        [HttpGet]
-        public IActionResult GetLogin()
-        {
-            var loginData = new { message = "Login endpoint" };
-            return Ok(loginData);
-        }
-
+        // Route For Seeding my roles to DB
         [HttpPost]
-        public IActionResult Login([FromBody] LoginRequestModel model)
+        [Route("seed-roles")]
+        public async Task<IActionResult> SeedRoles()
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest("Invalid username or password.");
-            }
-
-            string username = model.Username;
-            string userRol = model.userRol;
-
-            if (!ValidateUser(userRol))
-            {
-                return Unauthorized();
-            }
-
-            string token = Token.GenerateTokenJwt(username, _configuration["JwtSettings:Secret"]); // Generar el token
-
-            return Ok(new { token });
+            var seerRoles = await _authService.SeedRolesAsync();
+            return Ok(seerRoles);
         }
 
-        private bool ValidateUser(string userRol)
+        // Route -> Register
+        [HttpPost]
+        [Route("registro")]
+        public async Task<IActionResult> Register([FromBody] UserDTO userDto)
         {
-            return !string.IsNullOrEmpty(userRol); // Si el rol no es nulo ni vacío, considerarlo válido
+            var registerResult = await _authService.RegisterAsync(userDto);
+
+            if (registerResult.IsSucceed) 
+                return Ok(registerResult);
+
+            return BadRequest(registerResult);
         }
 
-        public class LoginRequestModel
+        // Route -> Login
+        [HttpPost]
+        [Route("login")]
+        public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
         {
-            public string Username { get; set; }
-            public string Password { get; set; }
-            public string userRol { get; set; }
+            var loginResult = await _authService.LoginAsync(loginDto);
+
+            if(loginResult.IsSucceed) return Ok(loginResult);
+
+            return Unauthorized(loginResult);
+        }
+
+        // Route -> make user -> admin
+        [HttpPost]
+        [Route("add-Admin")]
+        public async Task<IActionResult> AddAdmin([FromBody] UpdatePermissionDto updatePermissionDto)
+        {
+            var operationResult = await _authService.AddAdminAsync(updatePermissionDto);
+
+            if(operationResult.IsSucceed) return Ok(operationResult);
+
+            return BadRequest(operationResult);
+        }
+
+        // Route -> make user -> soporte
+        [HttpPost]
+        [Route("add-Soporte")]
+        public async Task<IActionResult> AddSoporte([FromBody] UpdatePermissionDto updatePermissionDto)
+        {
+            var operationResult = await _authService.AddSoporteAsync(updatePermissionDto);
+
+            if (operationResult.IsSucceed) return Ok(operationResult);
+
+            return BadRequest(operationResult);
         }
     }
 }

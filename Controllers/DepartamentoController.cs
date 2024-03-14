@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
+using Inventario.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
@@ -32,6 +34,7 @@ namespace Inventario.Controllers
             _host = host;
 
         }
+        // [Authorize(Roles = StaticUserRoles.ADMIN)]
         [HttpGet(Name = "GetDepartamentos"), AllowAnonymous]
         public async Task<ActionResult<PaginatedList<DepartamentoDTO>>> GetDepartamentos(int id, int pageNumber = 1, int pageSize = 6)
         {
@@ -62,7 +65,8 @@ namespace Inventario.Controllers
             
             return paginatedList;
         }
-        [HttpGet("{id}", Name = "GetDepartamento"), Authorize]
+        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [HttpGet("{id}", Name = "GetDepartamento")]
         public async Task<ActionResult<Departamento>> GetDepartamento(int id)
         {
             var departamento = await _context.departamento.FindAsync(id);
@@ -74,7 +78,8 @@ namespace Inventario.Controllers
 
             return departamento;
         }
-        [HttpPost, Authorize]
+        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] DepartamentoDTO departamento)
         {
             if (ModelState.IsValid)
@@ -92,7 +97,8 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-        [HttpPut("{id}"), Authorize]
+        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] DepartamentoDTO departamento)
         {
             if (id != departamento?.Id)
@@ -117,7 +123,8 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [HttpDelete("{id}"), Authorize]
+        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [HttpDelete("{id}")]
         public async Task<ActionResult<Departamento>> Delete(int id)
         {
             var departamento = await _context.departamento.FindAsync(id);
@@ -132,6 +139,7 @@ namespace Inventario.Controllers
 
             return departamento;
         }
+        [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDepartamento")]
         public async Task<IActionResult> DescargarPDF(int id)
         {
@@ -245,6 +253,5 @@ namespace Inventario.Controllers
             Stream stream = new MemoryStream(data);
             return File(stream, "application/pdf", "detalledepartamento.pdf");
         }
-
     }
 }

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
+using Inventario.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
@@ -61,7 +63,8 @@ namespace Inventario.Controllers
             
             return paginatedList;
         }
-        [HttpGet("{id}", Name = "GetComputer"), Authorize]
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [HttpGet("{id}", Name = "GetComputer")]
         public async Task<ActionResult<PC>> GetComputer(int id)
         {
             var computer = await _context.Computer.FindAsync(id);
@@ -72,7 +75,8 @@ namespace Inventario.Controllers
 
             return computer;
         }
-        [HttpPost, Authorize]
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] PCDTO computer)
         {
             if (ModelState.IsValid)
@@ -89,8 +93,8 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-
-        [HttpPut("{id}"), Authorize]
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] PCDTO computer)
         {
             if (id != computer?.Id)
@@ -115,7 +119,8 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [HttpDelete("{id}"), Authorize]
+        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [HttpDelete("{id}")]
         public async Task<ActionResult<PC>> Delete(int id)
         {
             var computer = await _context.Computer.FindAsync(id);
@@ -129,6 +134,7 @@ namespace Inventario.Controllers
 
             return computer;
         }
+        [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReportePCs")]
         public async Task<IActionResult> DescargarPDF(int id)
         {
