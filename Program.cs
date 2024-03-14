@@ -78,6 +78,7 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer(options =>
             };
             });
 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

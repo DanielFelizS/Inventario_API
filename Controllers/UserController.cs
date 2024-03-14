@@ -60,17 +60,17 @@
 //         }
 //         public class JwtSettings
 //         {
-//             public string? Secret { get; set; }
+//             public string Secret { get; set; }
 //             public int ExpirationDays { get; set; }
 //         }
 //         public class AuthenticateRequest
 //         {
-//             public string? UserName { get; set; }
-//             public string? Password { get; set; }
+//             public string UserName { get; set; }
+//             public string Password { get; set; }
 //         }
 //         public class AuthenticateResponse
 //         {
-//             public string? Token { get; set; }
+//             public string Token { get; set; }
 //         }
 //     }
 // }

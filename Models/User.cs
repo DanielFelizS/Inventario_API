@@ -9,9 +9,15 @@ namespace Inventario.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-        public string? UserName { get; set; }
-        public string? Password { get; set; }
-        public string? UserRol { get; set; }
-
+        [Required(ErrorMessage = "El nombre del usuario es obligatorio")]
+        public string UserName { get; set; }
+        [Required(ErrorMessage = "El email del usuario es obligatorio")]
+        [MaxLength(34, ErrorMessage = "El email del usuario no puede tener más de 34 caracteres")]
+        public string Email { get;  set; }
+        [Required(ErrorMessage = "La contraseña del usuario es obligatoria")]
+        public string Password { get; set; }
+        [Required(ErrorMessage = "El rol del usuario es obligatorio")]
+        [MaxLength(16, ErrorMessage = "El rol del usuario no puede tener más de 16 caracteres")]
+        public string UserRol { get; set; }
     }
 }

@@ -13,6 +13,7 @@ namespace Inventario.Models
         public int Id {get; set;}
         [Required(ErrorMessage = "El Id del equipo no debe ser nulo")]
         public int Equipo_Id {get; set;}
+        public Dispositivo Dispositivos { get; set; }
         [Required(ErrorMessage = "La memoria RAM no debe ser nulo")]
         public string RAM {get; set;} = "No Tiene";
         [Required(ErrorMessage = "El Disco duro del PC no debe ser nulo")]
@@ -26,7 +27,6 @@ namespace Inventario.Models
         [Required(ErrorMessage = "La Tarjeta Madre del PC no debe ser nulo")]
         public string MotherBoard {get; set;} = "No Tiene";
         public string? Tipo_MotherBoard {get; set;} = "No Tiene";
-        public Dispositivo Dispositivos;
 
     }
 }

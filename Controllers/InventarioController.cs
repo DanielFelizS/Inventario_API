@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
@@ -8,6 +9,10 @@ using Microsoft.AspNetCore.Authorization;
 using Inventario.Controllers;
 using Inventario.AutoMapperConfig;
 using AutoMapper;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Previewer;
+using System.IO;
 
 namespace Inventario.Controllers
 {
@@ -17,12 +22,16 @@ namespace Inventario.Controllers
         private readonly ILogger<DispositivoController> _logger;
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        int number = 0;
+        private readonly IWebHostEnvironment _host;
         
-        public DispositivoController(ILogger<DispositivoController> logger, DataContext context, IMapper mapper)
+        public DispositivoController(ILogger<DispositivoController> logger, DataContext context, IMapper mapper, IWebHostEnvironment host)
         {
             _logger = logger;
             _context = context;
             _mapper = mapper;
+            _host = host;
+
         }
         [AllowAnonymous]
         [HttpGet(Name = "GetDispositivos")]
@@ -82,7 +91,6 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-
         [HttpPut("{id}"), Authorize]
         public async Task<IActionResult> Put(int id, [FromBody] DispositivoDTO dispositivo)
         {
@@ -121,6 +129,135 @@ namespace Inventario.Controllers
             await _context.SaveChangesAsync();
 
             return dispositivo;
+        }
+        [HttpGet("reporte", Name = "GenerarReporteDispositivos")]
+        public async Task<IActionResult> DescargarPDF(int id)
+        {
+            var dispositivos = await _context.Dispositivos.ToListAsync();
+            
+            var data = Document.Create(document =>
+            {
+                document.Page(page =>
+                {
+                    page.Margin(30);
+
+                    page.Header().ShowOnce().Row(row =>
+                    {
+                        var rutaImagen = Path.Combine(_host.WebRootPath, "images/MIVED.png");
+                        byte[] imageData = System.IO.File.ReadAllBytes(rutaImagen);
+                         //row.ConstantItem(140).Height(60).Placeholder();
+                        row.ConstantItem(150).Image(imageData);
+                        row.RelativeItem().Column(col =>
+                        {
+                            col.Item().AlignCenter().Text("Ministerio de vivienda y edificaciones").Bold().FontSize(12);
+                            col.Item().AlignCenter().Text("Avenida Pedro Henríquez Ureña 124, Esquina Av. Alma Mater, Santo Domingo 10107, República Dominicana").FontSize(8);
+                            col.Item().AlignCenter().Text("https://mived.gob.do/").FontSize(8);
+                            col.Item().AlignCenter().Text("codigo@example.com").FontSize(8);
+                        });
+                    });
+
+                    page.Content().PaddingVertical(10).Column(col1 =>
+                    {
+                        col1.Item().Column(col2 =>
+                        {
+                            col2.Item().Text("Datos del empleado").Underline().Bold();
+
+                            col2.Item().Text(txt =>
+                            {
+                                txt.Span("Nombre: ").SemiBold().FontSize(10);
+                                txt.Span("Faustino Acevedo").FontSize(10);
+                            });
+
+                            col2.Item().Text(txt =>
+                            {
+                                txt.Span("Correo: ").SemiBold().FontSize(10);
+                                txt.Span("fautino.acevedo@mived.gob.do").FontSize(10);
+                            });
+
+                            col2.Item().Text(txt =>
+                            {
+                                txt.Span("Departamento: ").SemiBold().FontSize(10);
+                                txt.Span("Tecnología").FontSize(10);
+                            });
+                            col2.Item().Text("Dispositivos").Underline().Bold();
+
+                        });
+
+                        col1.Item().LineHorizontal(0.5f);
+                        col1.Item().Table(tabla =>
+                        {
+                            tabla.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
+                            });
+                            tabla.Header(header =>
+                            {
+                                header.Cell().Background("#257272").Text("Id").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Nombre").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Marca").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Modelo").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Estado").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Serial").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Invi").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Bienes").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Fecha").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Propietario").FontColor("#fff").FontSize(10);
+                            });
+
+                            // var dispositivos = new List<DispositivoDTO>();
+                            // var dispositivos = await _context.Dispositivos.ToListAsync();
+
+                            // Console.WriteLine("Cantidad de dispositivos: " + dispositivos.Count);
+                            foreach (var dispositivo in dispositivos)
+                            {
+                                var id = dispositivo.Id;
+                                var nombre = dispositivo.Nombre_equipo;
+                                var marca = dispositivo.Marca;
+                                var modelo = dispositivo.Modelo;
+                                var estado = dispositivo.Estado;
+                                var noSerial = dispositivo.Serial_no;
+                                var invi = dispositivo.Cod_inventario;
+                                var bienes = dispositivo.Bienes_nacionales.ToString();
+                                var fecha = dispositivo.Fecha_modificacion?.ToString("dd-MM-yy");
+                                var propietario = dispositivo.Propietario_equipo;
+
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(marca).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(modelo).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(estado).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(noSerial).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(invi).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(bienes).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(fecha).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(propietario).FontSize(10);
+                            }
+                        });
+                    });
+
+                    page.Footer()
+                    .AlignRight()
+                    .Text(txt =>
+                    {
+                        txt.Span("Pagina ").FontSize(10);
+                        txt.CurrentPageNumber().FontSize(10);
+                        txt.Span(" de ").FontSize(10);
+                        txt.TotalPages().FontSize(10);
+                    });
+                });
+            }).GeneratePdf();
+
+            Stream stream = new MemoryStream(data);
+            return File(stream, "application/pdf", "detalledispositivos.pdf");
         }
     }
 }
