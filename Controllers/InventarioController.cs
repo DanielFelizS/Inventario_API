@@ -128,7 +128,7 @@ namespace Inventario.Controllers
             return paginatedList;
         }
         [Authorize(Roles = StaticUserRoles.SOPORTE)]
-        [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
+        [HttpGet("{id}", Name = "GetDispositivoBy"), Authorize]
         public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)
         {
             var dispositivo = await _context.Dispositivos.FindAsync(id);

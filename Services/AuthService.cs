@@ -33,7 +33,7 @@ namespace Inventario.Services
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
-                    Message = "Credenciales inválidas"
+                    Message = "Usuario o contraseña incorrecto"
                 };
 
             var isPasswordCorrect = await _userManager.CheckPasswordAsync(user, loginDto.Password);
@@ -42,7 +42,7 @@ namespace Inventario.Services
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
-                    Message = "Credenciales inválidas"
+                    Message = "Usuario o contraseña incorrecto"
                 };
 
             var userRoles = await _userManager.GetRolesAsync(user);
@@ -101,7 +101,7 @@ namespace Inventario.Services
             return new AuthServiceResponseDto()
             {
                 IsSucceed = true,
-                Message = "El usuario es ahora un admin"
+                Message = $"El usuario {userDto.UserName} es ahora un admin"
             };
         }
 
@@ -125,7 +125,7 @@ namespace Inventario.Services
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
-                    Message = "El usuario no es un admin"
+                    Message = $"El usuario {userDto.UserName} no es un admin"
                 };
             }
 
@@ -136,7 +136,7 @@ namespace Inventario.Services
             return new AuthServiceResponseDto()
             {
                 IsSucceed = true,
-                Message = "El usuario ya no es un admin"
+                Message = $"El usuario {userDto.UserName} ya no es un admin"
             };
         }
 
@@ -158,7 +158,7 @@ namespace Inventario.Services
             return new AuthServiceResponseDto()
             {
                 IsSucceed = true,
-                Message = "El usuario es ahora parte del equipo de soporte técnico"
+                Message = $"El usuario {userDto.UserName} es ahora parte del equipo de soporte técnico"
             };
         }
 
@@ -182,7 +182,7 @@ namespace Inventario.Services
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
-                    Message = "El usuario no es parte del equipo de soporte técnico"
+                    Message = $"El usuario {userDto.UserName} no es parte del equipo de soporte técnico"
                 };
             }
 
@@ -205,7 +205,7 @@ namespace Inventario.Services
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
-                    Message = "El usuario ya existe"
+                    Message = $"El usuario {userDto.UserName} ya existe"
                 };
             
             ApplicationUser newUser = new ApplicationUser()
@@ -214,7 +214,6 @@ namespace Inventario.Services
                 LastName = userDto.LastName,
                 Email = userDto.Email,
                 UserName = userDto.UserName,
-                // UserRol = userDto.UserRol,
                 SecurityStamp = Guid.NewGuid().ToString(),
             };
 
@@ -234,7 +233,7 @@ namespace Inventario.Services
                 };
             }
 
-            // Add a Default Lector Role to all users
+            // Rol por defecto al registrarse un usuario
             await _userManager.AddToRoleAsync(newUser, StaticUserRoles.Lector);
 
             return new AuthServiceResponseDto()

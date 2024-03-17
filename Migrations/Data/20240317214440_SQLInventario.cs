@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Inventario.Migrations
+namespace Inventario.Migrations.Data
 {
     /// <inheritdoc />
-    public partial class ConexionSQL : Migration
+    public partial class SQLInventario : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,9 +33,11 @@ namespace Inventario.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UserName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Password = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserRol = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(34)", maxLength: 34, nullable: false),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -63,7 +65,7 @@ namespace Inventario.Migrations
                 {
                     table.PrimaryKey("PK_Dispositivos", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Dispositivos_departamento_DepartamentoId",
+                        name: "FK_Departamento",
                         column: x => x.DepartamentoId,
                         principalTable: "departamento",
                         principalColumn: "Id",
@@ -83,17 +85,17 @@ namespace Inventario.Migrations
                     Ventilador = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FuentePoder = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     MotherBoard = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Tipo_MotherBoard = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DispositivoId = table.Column<int>(type: "int", nullable: true)
+                    Tipo_MotherBoard = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Computer", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Computer_Dispositivos_DispositivoId",
-                        column: x => x.DispositivoId,
+                        name: "FK_Dispositivo",
+                        column: x => x.Equipo_Id,
                         principalTable: "Dispositivos",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -101,11 +103,6 @@ namespace Inventario.Migrations
                 table: "Computer",
                 column: "Disco_duro",
                 filter: "[Disco_duro] IS NOT NULL AND [Disco_duro]<> 'No Tiene'");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Computer_DispositivoId",
-                table: "Computer",
-                column: "DispositivoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Computer_Equipo_Id",
@@ -180,6 +177,18 @@ namespace Inventario.Migrations
                 column: "Serial_no",
                 unique: true,
                 filter: "[Serial_no] IS NOT NULL AND [Serial_no]<> 'No Tiene'");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_usuarios_Email",
+                table: "usuarios",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_usuarios_UserName",
+                table: "usuarios",
+                column: "UserName",
+                unique: true);
         }
 
         /// <inheritdoc />

@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Inventario.Models;
+using Inventario.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Inventario.Data
 {
@@ -17,6 +20,7 @@ namespace Inventario.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
             modelBuilder.Entity<Dispositivo>()
                 .HasOne(d => d.departamento)
                 .WithMany(dpto => dpto.Dispositivos)
@@ -87,6 +91,7 @@ namespace Inventario.Data
             modelBuilder.Entity<User>()
                 .HasIndex(d => d.UserName)
                 .IsUnique();
+            
         }
     }
 }
