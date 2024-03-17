@@ -35,18 +35,81 @@ namespace Inventario.Controllers
 
         }
         [AllowAnonymous]
-        [HttpGet(Name = "GetDispositivos"), Authorize]
+        [HttpGet(Name = "GetDispositivos")]
         public async Task<ActionResult<PaginatedList<DispositivoDTO>>> GetDispositivos(int id, int pageNumber = 1, int pageSize = 6)
         {
-            var allDispositivos = await _context.Dispositivos.ToListAsync();
-            var totalCount = allDispositivos.Count;
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var paginatedDispositivos = allDispositivos.Skip((pageNumber - 1) * pageSize)
+            var paginatedDispositivos = await (from dispositivo in _context.Dispositivos
+                join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
+                select new
+                {
+                    Dispositivo = dispositivo,
+                    Nombre_departamento = departamento.Nombre
+                })
+                .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
+                .ToListAsync();
+
+            var totalCount = await _context.Dispositivos.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
             // Mapear la lista de dispositivos a una lista de DispositivoDTO
-            var dispositivosDTO = _mapper.Map<List<DispositivoDTO>>(paginatedDispositivos);
+            var dispositivosDTO = paginatedDispositivos.Select(d =>
+            {
+                var dispositivoDTO = _mapper.Map<DispositivoDTO>(d.Dispositivo);
+                dispositivoDTO.Nombre_departamento = d.Nombre_departamento;
+                return dispositivoDTO;
+            }).ToList();
+
+            var paginatedList = new PaginatedList<DispositivoDTO>
+            {
+                Items = dispositivosDTO,
+                TotalCount = totalCount,
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages
+            };
+
+            // Agrega el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            return paginatedList;
+        }
+        [AllowAnonymous]
+        [HttpGet("search")]
+        public async Task<ActionResult<PaginatedList<DispositivoDTO>>> Search(int id, int pageNumber = 1, int pageSize = 6, string search = null)
+        {
+            // Consulta inicial de dispositivos
+            IQueryable<Dispositivo> consulta = _context.Dispositivos.Include(d => d.departamento);
+
+            // Filtrar por búsqueda si se proporciona
+            if (!string.IsNullOrEmpty(search))
+            {
+                consulta = consulta.Where(d => d.Nombre_equipo.Contains(search));
+            }
+
+            // Realizar la consulta paginada
+            var paginatedDispositivos = await consulta
+                .Select(d => new
+                {
+                    Dispositivo = d,
+                    Nombre_departamento = d.departamento.Nombre
+                })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalCount = await consulta.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // Mapear la lista de dispositivos a una lista de DispositivoDTO
+            var dispositivosDTO = paginatedDispositivos.Select(d =>
+            {
+                var dispositivoDTO = _mapper.Map<DispositivoDTO>(d.Dispositivo);
+                dispositivoDTO.Nombre_departamento = d.Nombre_departamento;
+                return dispositivoDTO;
+            }).ToList();
 
             var paginatedList = new PaginatedList<DispositivoDTO>
             {

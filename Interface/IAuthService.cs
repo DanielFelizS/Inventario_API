@@ -8,6 +8,8 @@ namespace Inventario.Interface
         Task<AuthServiceResponseDto> RegisterAsync(UserDTO userDto);
         Task<AuthServiceResponseDto> LoginAsync(LoginDTO loginDto);
         Task<AuthServiceResponseDto> AddAdminAsync(UpdatePermissionDto updatePermissionDto);
+        Task<AuthServiceResponseDto> RemoveAdminAsync(UpdatePermissionDto updatePermissionDto);
         Task<AuthServiceResponseDto> AddSoporteAsync(UpdatePermissionDto updatePermissionDto);
+        Task<AuthServiceResponseDto> RemoveSoporteAsync(UpdatePermissionDto updatePermissionDto);
     }
 }

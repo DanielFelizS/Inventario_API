@@ -19,6 +19,7 @@ namespace Inventario.AutoMapperConfig
 
             CreateMap<PC, PCDTO>();
             CreateMap<PCDTO, PC>();
+            CreateMap<UserDTO, User>();
         }
     }
 }

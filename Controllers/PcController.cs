@@ -36,31 +36,95 @@ namespace Inventario.Controllers
         [HttpGet(Name = "GetComputers"), AllowAnonymous]
         public async Task<ActionResult<PaginatedList<PCDTO>>> GetComputers(int id, int pageNumber = 1, int pageSize = 6)
         {
-
-            var datos = await _context.Computer.FindAsync(id);
-
-            var allComputer = await _context.Computer.ToListAsync();
-            var totalCount = allComputer.Count;
-            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var paginatedComputer = allComputer.Skip((pageNumber - 1) * pageSize)
+            var query = await _context.Computer
+                .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
-            var ComputersDTO = _mapper.Map<List<PCDTO>>(paginatedComputer);
+                .Join(_context.Dispositivos,
+                    pc => pc.Equipo_Id,
+                    dispositivo => dispositivo.Id,
+                    (pc, dispositivo) => new PCDTO
+                    {
+                        Id = pc.Id,
+                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        RAM = pc.RAM ?? "No Tiene",
+                        Disco_duro = pc.Disco_duro ?? "No Tiene",
+                        Procesador = pc.Procesador ?? "No Tiene",
+                        Ventilador = pc.Ventilador ?? "No Tiene",
+                        FuentePoder = pc.FuentePoder ?? "No Tiene",
+                        MotherBoard = pc.MotherBoard ?? "No Tiene",
+                        Tipo_MotherBoard = pc.Tipo_MotherBoard ?? "No Tiene",
+                    })
+                .ToListAsync();
 
+            // Crear una lista paginada de PCDTO
             var paginatedList = new PaginatedList<PCDTO>
             {
-                Items = ComputersDTO,
-                TotalCount = totalCount,
+                Items = query,
+                TotalCount = await _context.Computer.CountAsync(),
                 PageIndex = pageNumber,
                 PageSize = pageSize,
-                TotalPages = totalPages
+                TotalPages = (int)Math.Ceiling((double)_context.Computer.Count() / pageSize)
             };
 
-            // Agrega el encabezado 'X-Total-Count' a la respuesta
-            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            // Agregar el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = paginatedList.TotalCount.ToString();
             // Exponer el encabezado 'X-Total-Count'
             Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
-            
+
+            return paginatedList;
+        }
+        [HttpGet("search"), AllowAnonymous]
+        public async Task<ActionResult<PaginatedList<PCDTO>>> Search(int id, int pageNumber = 1, int pageSize = 6, string search = null)
+        {
+            // Paginar los PC
+            var paginatedPC = await _context.Computer
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            // Consulta inicial
+            IQueryable<PC> consulta = _context.Computer;
+
+            // Filtrar por búsqueda si se proporciona
+            if (!string.IsNullOrEmpty(search))
+            {
+                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo.Contains(search));
+            }
+
+            // Realizar la consulta paginada
+            var query = await consulta
+                .Join(_context.Dispositivos,
+                    pc => pc.Equipo_Id,
+                    dispositivo => dispositivo.Id,
+                    (pc, dispositivo) => new PCDTO
+                    {
+                        Id = pc.Id,
+                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        RAM = pc.RAM ?? "No Tiene",
+                        Disco_duro = pc.Disco_duro ?? "No Tiene",
+                        Procesador = pc.Procesador ?? "No Tiene",
+                        Ventilador = pc.Ventilador ?? "No Tiene",
+                        FuentePoder = pc.FuentePoder ?? "No Tiene",
+                        MotherBoard = pc.MotherBoard ?? "No Tiene",
+                        Tipo_MotherBoard = pc.Tipo_MotherBoard ?? "No Tiene",
+                    })
+                .ToListAsync();
+
+            // Crear una lista paginada de PCDTO
+            var paginatedList = new PaginatedList<PCDTO>
+            {
+                Items = query,
+                TotalCount = await _context.Computer.CountAsync(),
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)_context.Computer.Count() / pageSize)
+            };
+
+            // Agregar el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = paginatedList.TotalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
             return paginatedList;
         }
         [Authorize(Roles = StaticUserRoles.SOPORTE)]
@@ -136,7 +200,7 @@ namespace Inventario.Controllers
         }
         [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReportePCs")]
-        public async Task<IActionResult> DescargarPDF(int id)
+        public async Task<IActionResult> DescargarPDF()
         {
             var computer = await _context.Computer.ToListAsync();
             

@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using static System.DateTime;
 
 namespace Inventario.DTOs
 {
@@ -15,9 +12,9 @@ namespace Inventario.DTOs
         public string Serial_no { get; set; } = "No Tiene";
         public string Cod_inventario { get; set; } = "No Tiene";
         public int Bienes_nacionales { get; set; } = 0;
-        public DateTime Fecha_modificacion { get; set; }
+        public DateTime? Fecha_modificacion { get; set; }
         public string Propietario_equipo { get; set; }
-        public int DepartamentoId{ get; set; }
-        // public string Nombre_departamento { get; set; }
+        // public int DepartamentoId{ get; set; }
+        public string Nombre_departamento { get; set; }
     }
 }

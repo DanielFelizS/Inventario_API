@@ -65,6 +65,43 @@ namespace Inventario.Controllers
             
             return paginatedList;
         }
+        [HttpGet("search"), AllowAnonymous]
+        public async Task<ActionResult<PaginatedList<DepartamentoDTO>>> Search(int id, int pageNumber = 1, int pageSize = 6, string search = null)
+        {
+            var consulta = _context.departamento.AsQueryable();
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                consulta = consulta.Where(d => d.Nombre.Contains(search));
+            }
+
+            var totalCount = await consulta.CountAsync();
+
+            // Obtener los dispositivos paginados
+            var paginatedDispositivos = await consulta
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var dispositivosDTO = _mapper.Map<List<DepartamentoDTO>>(paginatedDispositivos);
+
+            var paginatedList = new PaginatedList<DepartamentoDTO>
+            {
+                Items = dispositivosDTO,
+                TotalCount = totalCount,
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+            };
+
+            // Agregar el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = paginatedList.TotalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            // Devolver la lista paginada de dispositivos
+            return paginatedList;
+        }
         [Authorize(Roles = StaticUserRoles.ADMIN)]
         [HttpGet("{id}", Name = "GetDepartamento")]
         public async Task<ActionResult<Departamento>> GetDepartamento(int id)
