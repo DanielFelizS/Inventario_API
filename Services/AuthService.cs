@@ -101,42 +101,7 @@ namespace Inventario.Services
             return new AuthServiceResponseDto()
             {
                 IsSucceed = true,
-                Message = $"El usuario {userDto.UserName} es ahora un admin"
-            };
-        }
-
-        public async Task<AuthServiceResponseDto> RemoveAdminAsync(UpdatePermissionDto updatePermissionDto)
-        {
-            var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
-
-            if (user is null)
-            {
-                return new AuthServiceResponseDto()
-                {
-                    IsSucceed = false,
-                    Message = "Nombre de usuario incorrecto"
-                };
-            }
-
-            // Verificar si el usuario tiene el rol de ADMIN antes de intentar eliminarlo
-            if (!await _userManager.IsInRoleAsync(user, StaticUserRoles.ADMIN))
-            {
-                // El usuario no tiene el rol ADMIN, manejar el error apropiadamente
-                return new AuthServiceResponseDto()
-                {
-                    IsSucceed = false,
-                    Message = $"El usuario {userDto.UserName} no es un admin"
-                };
-            }
-
-            // El usuario tiene el rol ADMIN, eliminar el rol del usuario
-            await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.ADMIN);
-            await _userManager.AddToRoleAsync(user, StaticUserRoles.Lector);
-
-            return new AuthServiceResponseDto()
-            {
-                IsSucceed = true,
-                Message = $"El usuario {userDto.UserName} ya no es un admin"
+                Message = $"El usuario {updatePermissionDto.UserName} es ahora un admin"
             };
         }
 
@@ -158,42 +123,7 @@ namespace Inventario.Services
             return new AuthServiceResponseDto()
             {
                 IsSucceed = true,
-                Message = $"El usuario {userDto.UserName} es ahora parte del equipo de soporte técnico"
-            };
-        }
-
-        public async Task<AuthServiceResponseDto> RemoveSoporteAsync(UpdatePermissionDto updatePermissionDto)
-        {
-            var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
-
-            if (user is null)
-            {
-                return new AuthServiceResponseDto()
-                {
-                    IsSucceed = false,
-                    Message = "Nombre de usuario incorrecto"
-                };
-            }
-
-            // Verificar si el usuario tiene el rol de SOPORTE antes de intentar eliminarlo
-            if (!await _userManager.IsInRoleAsync(user, StaticUserRoles.SOPORTE))
-            {
-                // El usuario no tiene el rol SOPORTE, manejar el error apropiadamente
-                return new AuthServiceResponseDto()
-                {
-                    IsSucceed = false,
-                    Message = $"El usuario {userDto.UserName} no es parte del equipo de soporte técnico"
-                };
-            }
-
-            // El usuario tiene el rol SOPORTE, eliminar el rol del usuario
-            await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.SOPORTE);
-            await _userManager.AddToRoleAsync(user, StaticUserRoles.Lector);
-
-            return new AuthServiceResponseDto()
-            {
-                IsSucceed = true,
-                Message = "El usuario ya no es parte del equipo de soporte técnico"
+                Message = $"El usuario {updatePermissionDto.UserName} es ahora parte del equipo de soporte técnico"
             };
         }
 

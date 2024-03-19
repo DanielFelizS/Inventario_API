@@ -1,10 +1,11 @@
-using static System.DateTime;
-using System.Text.Json.Serialization;
-using System.ComponentModel.DataAnnotations.Schema;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Inventario.DTOs
 {
-    public class DispositivoDTO
+    public class DispositivoCreateDTO
     {
         public int Id { get; set; }
         public string Nombre_equipo { get; set; }
@@ -16,9 +17,6 @@ namespace Inventario.DTOs
         public int Bienes_nacionales { get; set; } = 0;
         public DateTime? Fecha_modificacion { get; set; }
         public string Propietario_equipo { get; set; }
-        [JsonIgnore]
-        public int DepartamentoId{ get; set; }
-        [NotMapped]
-        public string Nombre_departamento { get; set; }
+        public int DepartamentoId { get; set; }
     }
 }

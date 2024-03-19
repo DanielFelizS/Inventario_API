@@ -40,9 +40,18 @@ namespace Inventario.Controllers
         {
             var paginatedDispositivos = await (from dispositivo in _context.Dispositivos
                 join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
-                select new
+                select new DispositivoDTO
                 {
-                    Dispositivo = dispositivo,
+                    Id = dispositivo.Id,
+                    Nombre_equipo = dispositivo.Nombre_equipo,
+                    Marca = dispositivo.Marca,
+                    Modelo = dispositivo.Modelo,
+                    Estado = dispositivo.Estado,
+                    Serial_no = dispositivo.Serial_no,
+                    Cod_inventario = dispositivo.Cod_inventario,
+                    Bienes_nacionales = dispositivo.Bienes_nacionales,
+                    Fecha_modificacion = dispositivo.Fecha_modificacion,
+                    Propietario_equipo = dispositivo.Propietario_equipo,
                     Nombre_departamento = departamento.Nombre
                 })
                 .Skip((pageNumber - 1) * pageSize)
@@ -52,21 +61,13 @@ namespace Inventario.Controllers
             var totalCount = await _context.Dispositivos.CountAsync();
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // Mapear la lista de dispositivos a una lista de DispositivoDTO
-            var dispositivosDTO = paginatedDispositivos.Select(d =>
-            {
-                var dispositivoDTO = _mapper.Map<DispositivoDTO>(d.Dispositivo);
-                dispositivoDTO.Nombre_departamento = d.Nombre_departamento;
-                return dispositivoDTO;
-            }).ToList();
-
             var paginatedList = new PaginatedList<DispositivoDTO>
             {
-                Items = dispositivosDTO,
                 TotalCount = totalCount,
                 PageIndex = pageNumber,
                 PageSize = pageSize,
-                TotalPages = totalPages
+                TotalPages = totalPages,
+                Items = paginatedDispositivos
             };
 
             // Agrega el encabezado 'X-Total-Count' a la respuesta
@@ -127,26 +128,45 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
-        [HttpGet("{id}", Name = "GetDispositivoBy"), Authorize]
-        public async Task<ActionResult<Dispositivo>> GetDispositivo(int id)
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
+        public async Task<ActionResult<DispositivoDTO>> GetDispositivo(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
+            var dispositivo = await _context.Dispositivos
+                .Include(d => d.departamento)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
             if (dispositivo == null)
             {
                 return NotFound();
             }
 
-            return dispositivo;
+            // Mapear el dispositivo a un DTO que incluya el nombre del departamento
+            var dispositivoDTO = new DispositivoDTO
+            {
+                Id = dispositivo.Id,
+                Nombre_equipo = dispositivo.Nombre_equipo,
+                Marca = dispositivo.Marca,
+                Modelo = dispositivo.Modelo,
+                Estado = dispositivo.Estado,
+                Serial_no = dispositivo.Serial_no,
+                Cod_inventario = dispositivo.Cod_inventario,
+                Bienes_nacionales = dispositivo.Bienes_nacionales,
+                Fecha_modificacion = dispositivo.Fecha_modificacion,
+                Propietario_equipo = dispositivo.Propietario_equipo,
+                Nombre_departamento = dispositivo.departamento != null ? dispositivo.departamento.Nombre : null
+            };
+
+            return dispositivoDTO;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpPost, Authorize]
-        public async Task<IActionResult> saveInformation([FromBody] DispositivoDTO dispositivo)
+        public async Task<IActionResult> saveInformation([FromBody] DispositivoCreateDTO dispositivo)
         {
             if (ModelState.IsValid)
             {
                 Dispositivo newDispositivo = _mapper.Map<Dispositivo>(dispositivo);
-                // Agregar el departamento al contexto y guardar los cambios en la base de datos
+                newDispositivo.DepartamentoId = dispositivo.DepartamentoId;
                 _context.Dispositivos.AddAsync(newDispositivo);
                 await _context.SaveChangesAsync();
 
@@ -154,12 +174,11 @@ namespace Inventario.Controllers
                 return CreatedAtRoute("Getdispositivo", new { id = newDispositivo.Id }, newDispositivo);
             }
 
-            // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
-        [HttpPut("{id}"), Authorize]
-        public async Task<IActionResult> Put(int id, [FromBody] DispositivoDTO dispositivo)
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] DispositivoCreateDTO dispositivo)
         {
             if (id != dispositivo?.Id)
             {
@@ -174,6 +193,7 @@ namespace Inventario.Controllers
             try
             {
                 Dispositivo newDispositivo = _mapper.Map<Dispositivo>(dispositivo);
+                newDispositivo.DepartamentoId = dispositivo.DepartamentoId;
                 _context.Update(newDispositivo);
                 await _context.SaveChangesAsync();
                 return Ok("Se actualizó correctamente");
@@ -183,8 +203,8 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
-        [HttpDelete("{id}"), Authorize]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [HttpDelete("{id}")]
         public async Task<ActionResult<Dispositivo>> Delete(int id)
         {
             var dispositivo = await _context.Dispositivos.FindAsync(id);
@@ -202,19 +222,20 @@ namespace Inventario.Controllers
         [HttpGet("reporte", Name = "GenerarReporteDispositivos")]
         public async Task<IActionResult> DescargarPDF(int id)
         {
-            var dispositivos = await _context.Dispositivos.ToListAsync();
+            var dispositivos = await (from dispositivo in _context.Dispositivos
+                join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
+                select new { Dispositivo = dispositivo, Departamento = departamento })
+                .ToListAsync();
             
             var data = Document.Create(document =>
             {
                 document.Page(page =>
                 {
                     page.Margin(30);
-
                     page.Header().ShowOnce().Row(row =>
                     {
                         var rutaImagen = Path.Combine(_host.WebRootPath, "images/MIVED.png");
                         byte[] imageData = System.IO.File.ReadAllBytes(rutaImagen);
-                         //row.ConstantItem(140).Height(60).Placeholder();
                         row.ConstantItem(150).Image(imageData);
                         row.RelativeItem().Column(col =>
                         {
@@ -267,6 +288,7 @@ namespace Inventario.Controllers
                                 columns.RelativeColumn(6);
                                 columns.RelativeColumn(6);
                                 columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
                             });
                             tabla.Header(header =>
                             {
@@ -280,24 +302,22 @@ namespace Inventario.Controllers
                                 header.Cell().Background("#257272").Text("Bienes").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Fecha").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Propietario").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Departamento").FontColor("#fff").FontSize(10);
                             });
 
-                            // var dispositivos = new List<DispositivoDTO>();
-                            // var dispositivos = await _context.Dispositivos.ToListAsync();
-
-                            // Console.WriteLine("Cantidad de dispositivos: " + dispositivos.Count);
                             foreach (var dispositivo in dispositivos)
                             {
-                                var id = dispositivo.Id;
-                                var nombre = dispositivo.Nombre_equipo;
-                                var marca = dispositivo.Marca;
-                                var modelo = dispositivo.Modelo;
-                                var estado = dispositivo.Estado;
-                                var noSerial = dispositivo.Serial_no;
-                                var invi = dispositivo.Cod_inventario;
-                                var bienes = dispositivo.Bienes_nacionales.ToString();
-                                var fecha = dispositivo.Fecha_modificacion?.ToString("dd-MM-yy");
-                                var propietario = dispositivo.Propietario_equipo;
+                                var id = dispositivo.Dispositivo.Id;
+                                var nombre = dispositivo.Dispositivo.Nombre_equipo;
+                                var marca = dispositivo.Dispositivo.Marca;
+                                var modelo = dispositivo.Dispositivo.Modelo;
+                                var estado = dispositivo.Dispositivo.Estado;
+                                var noSerial = dispositivo.Dispositivo.Serial_no;
+                                var invi = dispositivo.Dispositivo.Cod_inventario;
+                                var bienes = dispositivo.Dispositivo.Bienes_nacionales.ToString();
+                                var fecha = dispositivo.Dispositivo.Fecha_modificacion?.ToString("dd-MM-yy");
+                                var propietario = dispositivo.Dispositivo.Propietario_equipo;
+                                var Nombre_departamento = dispositivo.Departamento.Nombre;
 
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);
@@ -309,6 +329,7 @@ namespace Inventario.Controllers
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(bienes).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(fecha).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(propietario).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(Nombre_departamento).FontSize(10);
                             }
                         });
                     });

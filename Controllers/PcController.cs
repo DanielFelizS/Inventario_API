@@ -127,26 +127,43 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpGet("{id}", Name = "GetComputer")]
-        public async Task<ActionResult<PC>> GetComputer(int id)
+        public async Task<ActionResult<PCDTO>> GetComputer(int id)
         {
-            var computer = await _context.Computer.FindAsync(id);
+            var computer = await _context.Computer
+                .Include(d => d.Dispositivos)
+                .FirstOrDefaultAsync(d => d.Id == id);
+
             if (computer == null)
             {
                 return NotFound();
             }
 
-            return computer;
+            var pcDTO = new PCDTO
+            {
+                Id = computer.Id,
+                Nombre_equipo = computer.Dispositivos.Nombre_equipo,
+                RAM = computer.RAM,
+                Disco_duro = computer.Disco_duro,
+                Procesador = computer.Procesador,
+                Ventilador = computer.Ventilador,
+                FuentePoder = computer.FuentePoder,
+                MotherBoard = computer.MotherBoard,
+                Tipo_MotherBoard = computer.Tipo_MotherBoard
+            };
+
+            return pcDTO;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpPost]
-        public async Task<IActionResult> saveInformation([FromBody] PCDTO computer)
+        public async Task<IActionResult> saveInformation([FromBody] PcCreateDTO computer)
         {
             if (ModelState.IsValid)
             {
                 // Agregar el departamento al contexto y guardar los cambios en la base de datos
                 PC newComputer = _mapper.Map<PC>(computer);
+                newComputer.Equipo_Id = computer.Equipo_Id;
                 _context.Computer.Add(newComputer);
                 await _context.SaveChangesAsync();
 
@@ -157,7 +174,7 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] PCDTO computer)
         {
@@ -174,6 +191,7 @@ namespace Inventario.Controllers
             try
             {
                 PC newComputer = _mapper.Map<PC>(computer);
+                newComputer.Equipo_Id = computer.Equipo_Id;
                 _context.Update(newComputer);
                 await _context.SaveChangesAsync();
                 return Ok("Se actualizó correctamente");
@@ -183,7 +201,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<PC>> Delete(int id)
         {
@@ -202,8 +220,10 @@ namespace Inventario.Controllers
         [HttpGet("reporte", Name = "GenerarReportePCs")]
         public async Task<IActionResult> DescargarPDF()
         {
-            var computer = await _context.Computer.ToListAsync();
-            
+            var computer = await (from pc in _context.Computer
+            join dispositivo in _context.Dispositivos on pc.Equipo_Id equals dispositivo.Id
+            select new {PC = pc, Dispositivo = dispositivo}).ToListAsync();
+
             var data = Document.Create(document =>
             {
                 document.Page(page =>
@@ -214,7 +234,6 @@ namespace Inventario.Controllers
                     {
                         var rutaImagen = Path.Combine(_host.WebRootPath, "images/MIVED.png");
                         byte[] imageData = System.IO.File.ReadAllBytes(rutaImagen);
-                         //row.ConstantItem(140).Height(60).Placeholder();
                         row.ConstantItem(150).Image(imageData);
                         row.RelativeItem().Column(col =>
                         {
@@ -275,27 +294,22 @@ namespace Inventario.Controllers
                                 header.Cell().Background("#257272").Text("Disco Duro").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Procesador").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Ventilador").FontColor("#fff").FontSize(10);
-                                header.Cell().Background("#257272").Text("Fuente de Poder").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Fuente_poder").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("MotherBoard").FontColor("#fff").FontSize(10);
-                                header.Cell().Background("#257272").Text("Tipo de MotherBoard").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Tipo MotherBoard").FontColor("#fff").FontSize(10);
                             });
-
-                            // var dispositivos = new List<DispositivoDTO>();
-                            // var dispositivos = await _context.Dispositivos.ToListAsync();
-
-                            // Console.WriteLine("Cantidad de dispositivos: " + dispositivos.Count);
                             
                             foreach (var Computer in computer)
                             {
-                                var id = Computer.Id;
-                                var nombre = Computer.Equipo_Id;
-                                var ram = Computer.RAM;
-                                var discoDuro = Computer.Disco_duro;
-                                var procesador = Computer.Procesador;
-                                var ventilador = Computer.Ventilador;
-                                var fuentePoder = Computer.FuentePoder;
-                                var motherBoard = Computer.MotherBoard;
-                                var tipoMotherBoard = Computer.Tipo_MotherBoard;
+                                var id = Computer.PC.Id;
+                                var nombre = Computer.Dispositivo.Nombre_equipo;
+                                var ram = Computer.PC.RAM;
+                                var discoDuro = Computer.PC.Disco_duro;
+                                var procesador = Computer.PC.Procesador;
+                                var ventilador = Computer.PC.Ventilador;
+                                var fuentePoder = Computer.PC.FuentePoder;
+                                var motherBoard = Computer.PC.MotherBoard;
+                                var tipoMotherBoard = Computer.PC.Tipo_MotherBoard;
 
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);

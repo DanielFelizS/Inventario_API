@@ -10,16 +10,21 @@ namespace Inventario.AutoMapperConfig
         {
             CreateMap<Departamento, DepartamentoDTO>();
             CreateMap<DepartamentoDTO, Departamento>();
+
             CreateMap<Dispositivo, DispositivoDTO>();
-            // .ForMember(dest => dest.Nombre_departamento, opt => opt.MapFrom(src => src.departamento.Nombre));
-            // CreateMap<Dispositivo, DispositivoDTO>();
-                // .ForMember(dest => dest.departamento, opt => opt.Ignore())
-                // .ForMember(dest => dest.Computer, opt => opt.Ignore());
             CreateMap<DispositivoDTO, Dispositivo>();
+            CreateMap<DispositivoCreateDTO, Dispositivo>();
+            CreateMap<DispositivoDTO, DispositivoCreateDTO>();
+            CreateMap<DispositivoCreateDTO, DispositivoDTO>();
 
             CreateMap<PC, PCDTO>();
+            CreateMap<PCDTO, PcCreateDTO>();
             CreateMap<PCDTO, PC>();
+            CreateMap<PcCreateDTO, PCDTO>();
+            CreateMap<PcCreateDTO, PC>();
+            
             CreateMap<UserDTO, User>();
+            CreateMap<User, UserDTO>();
         }
     }
 }

@@ -1,15 +1,14 @@
-using System.Text.Json.Serialization;
-using System.ComponentModel.DataAnnotations.Schema;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Inventario.DTOs
 {
-    public class PCDTO
+    public class PcCreateDTO
     {
-        public int Id { get; set; }
-        [JsonIgnore]
+        public int Id { get; set; }        
         public int Equipo_Id {get; set;}
-        [NotMapped]
-        public string Nombre_equipo { get; set; }
         public string RAM { get; set; } = "No Tiene";
         public string Disco_duro { get; set; } = "No Tiene";
         public string Procesador { get; set; } = "No Tiene";

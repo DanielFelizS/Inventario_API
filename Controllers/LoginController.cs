@@ -23,7 +23,7 @@ using AutoMapper;
 namespace Inventario.Controllers
 {
     [ApiController]
-    [Route("api/")]
+    [Route("api/usuarios")]
     public class LoginController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -49,7 +49,44 @@ namespace Inventario.Controllers
             var seerRoles = await _authService.SeedRolesAsync();
             return Ok(seerRoles);
         }
-        [HttpGet("{id}", Name = "GetUsarios")]
+        [HttpGet(Name = "GetUsuarios")]
+        public async Task<ActionResult<PaginatedList<UserDTO>>> GetUsuarios(int pageNumber = 1, int pageSize = 6)
+        {
+            var paginatedUsers = await _context.usuarios
+                .Select(user => new UserDTO
+                {
+                    // Mapea los campos de usuario a los campos correspondientes en UserDTO
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    UserName = user.UserName,
+                    Email = user.Email
+                })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalCount = await _context.usuarios.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var paginatedList = new PaginatedList<UserDTO>
+            {
+                TotalCount = totalCount,
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Items = paginatedUsers
+            };
+
+            // Agrega el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            return paginatedList;
+        }
+        [HttpGet("{id}", Name = "GetUsario")]
+        // [Route("usuario")]
         public async Task<ActionResult<User>> GetData(int id)
         {
             var user = await _context.usuarios.FindAsync(id);
@@ -60,7 +97,6 @@ namespace Inventario.Controllers
 
             return user;
         }
-
         [HttpPost]
         [Route("registro")]
         public async Task<ActionResult<User>> Register([FromBody] UserDTO userDto)
@@ -73,12 +109,11 @@ namespace Inventario.Controllers
                 _context.usuarios.AddAsync(newUser);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtRoute("GetUsarios", new { id = newUser.Id }, newUser);
+                return CreatedAtRoute("GetUsario", new { id = newUser.Id }, newUser);
             }
 
             return BadRequest(registerResult);
         }
-
         // Route -> Login
         [HttpPost]
         [Route("login")]
@@ -90,7 +125,6 @@ namespace Inventario.Controllers
 
             return Unauthorized(loginResult);
         }
-
         // Route -> make user -> admin
         [HttpPost]
         [Route("add-Admin")]
@@ -102,36 +136,12 @@ namespace Inventario.Controllers
 
             return BadRequest(operationResult);
         }
-        // Route -> remove user -> admin
-        [HttpDelete]
-        [Route("delete-Admin")]
-        public async Task<IActionResult> RemoveAdmin([FromBody] UpdatePermissionDto updatePermissionDto)
-        {
-            var operationResult = await _authService.RemoveAdminAsync(updatePermissionDto);
-
-            if(operationResult.IsSucceed) return Ok(operationResult);
-
-            return BadRequest(operationResult);
-        }
-
         // Route -> make user -> soporte
         [HttpPost]
         [Route("add-Soporte")]
         public async Task<IActionResult> AddSoporte([FromBody] UpdatePermissionDto updatePermissionDto)
         {
             var operationResult = await _authService.AddSoporteAsync(updatePermissionDto);
-
-            if (operationResult.IsSucceed) return Ok(operationResult);
-
-            return BadRequest(operationResult);
-        }
-
-        // Route -> remove user -> soporte
-        [HttpDelete]
-        [Route("delete-Soporte")]
-        public async Task<IActionResult> RemoveSoporte([FromBody] UpdatePermissionDto updatePermissionDto)
-        {
-            var operationResult = await _authService.RemoveSoporteAsync(updatePermissionDto);
 
             if (operationResult.IsSucceed) return Ok(operationResult);
 
