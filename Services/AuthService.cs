@@ -204,7 +204,7 @@ namespace Inventario.Services
             var tokenObject = new JwtSecurityToken(
                     issuer: _configuration["JwtSettings:ValidIssuer"],
                     audience: _configuration["JwtSettings:ValidAudience"],
-                    expires: DateTime.Now.AddHours(1),
+                    expires: DateTime.Now.AddHours(8),
                     claims: claims,
                     signingCredentials: new SigningCredentials(authSecret, SecurityAlgorithms.HmacSha256)
                 );
