@@ -42,7 +42,8 @@ namespace Inventario.Models
         [Required(ErrorMessage = "Bienes Nacionales es obligatorio")]
         // [CustomValidation(typeof(Dispositivo), "ValidateBienesNacionalesUnico")]
         public int Bienes_nacionales { get; set; } = 0;
-
+        [DisplayFormat(DataFormatString = "{0:dd-MM-yyyy}", ApplyFormatInEditMode=true)]
+        [DataType(DataType.Date)]
         public DateTime? Fecha_modificacion { get; set; }
         public string? Propietario_equipo { get; set; }
 

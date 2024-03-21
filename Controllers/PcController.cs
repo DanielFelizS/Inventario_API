@@ -88,7 +88,9 @@ namespace Inventario.Controllers
             // Filtrar por búsqueda si se proporciona
             if (!string.IsNullOrEmpty(search))
             {
-                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo.Contains(search));
+                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo != null && pc.Dispositivos.Nombre_equipo.Contains(search) ||
+                pc.RAM != null && pc.RAM.Contains(search) ||
+                pc.Disco_duro != null && pc.Disco_duro.Contains(search));
             }
 
             // Realizar la consulta paginada
@@ -106,7 +108,7 @@ namespace Inventario.Controllers
                         Ventilador = pc.Ventilador ?? "No Tiene",
                         FuentePoder = pc.FuentePoder ?? "No Tiene",
                         MotherBoard = pc.MotherBoard ?? "No Tiene",
-                        Tipo_MotherBoard = pc.Tipo_MotherBoard ?? "No Tiene",
+                        Tipo_MotherBoard = pc.Tipo_MotherBoard ?? "No Tiene"
                     })
                 .ToListAsync();
 

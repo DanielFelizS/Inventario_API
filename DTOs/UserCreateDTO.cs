@@ -1,18 +1,18 @@
-using Microsoft.AspNetCore.Identity;
-using System.Text.Json.Serialization;
-
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Inventario.DTOs
 {
-    public class UserDTO
+    public class UserCreateDTO
     {
         public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
-        [JsonIgnore]
         public string Password { get; set; }
-        // public string UserRol { get; set; }
+
     }
 }

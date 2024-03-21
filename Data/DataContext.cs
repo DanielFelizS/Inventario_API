@@ -3,6 +3,7 @@ using Inventario.Models;
 using Inventario.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Inventario.Data
 {
@@ -54,8 +55,8 @@ namespace Inventario.Data
 
             modelBuilder.Entity<Departamento>()
                 .HasIndex(d => d.Encargado)
-                .IsUnique();       
-            
+                .IsUnique();
+
             modelBuilder.Entity<PC>()
                 .HasIndex(d => d.Equipo_Id)
                 .IsUnique();   

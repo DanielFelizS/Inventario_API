@@ -85,6 +85,50 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
+        [HttpGet("search")]
+        public async Task<ActionResult<PaginatedList<UserDTO>>> Search(int pageNumber = 1, int pageSize = 6, string search = null)
+        {
+
+            IQueryable<User> consulta = _context.usuarios;
+            // Filtrar por búsqueda si se proporciona
+            if (!string.IsNullOrEmpty(search))
+            {
+                consulta = consulta.Where(d => d.FirstName.Contains(search));
+            }
+
+            var paginatedUsers = await _context.usuarios
+                .Select(user => new UserDTO
+                {
+                    // Mapea los campos de usuario a los campos correspondientes en UserDTO
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    UserName = user.UserName,
+                    Email = user.Email
+                })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var totalCount = await _context.usuarios.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var paginatedList = new PaginatedList<UserDTO>
+            {
+                TotalCount = totalCount,
+                PageIndex = pageNumber,
+                PageSize = pageSize,
+                TotalPages = totalPages,
+                Items = paginatedUsers
+            };
+
+            // Agrega el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            return paginatedList;
+        }
         [HttpGet("{id}", Name = "GetUsario")]
         // [Route("usuario")]
         public async Task<ActionResult<User>> GetData(int id)
@@ -99,7 +143,7 @@ namespace Inventario.Controllers
         }
         [HttpPost]
         [Route("registro")]
-        public async Task<ActionResult<User>> Register([FromBody] UserDTO userDto)
+        public async Task<ActionResult<User>> Register([FromBody] UserCreateDTO userDto)
         {
             var registerResult = await _authService.RegisterAsync(userDto);
 
@@ -146,6 +190,45 @@ namespace Inventario.Controllers
             if (operationResult.IsSucceed) return Ok(operationResult);
 
             return BadRequest(operationResult);
+        }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] UserCreateDTO user)
+        {
+            if (id != user?.Id)
+            {
+                return BadRequest("No se encontró el ID");
+            }
+
+            else if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                User newUser = _mapper.Map<User>(user);
+                _context.Update(newUser);
+                await _context.SaveChangesAsync();
+                return Ok("Se actualizó correctamente");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
+            }
+        }
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<User>> Delete(string id)
+        {
+            var user = await _context.usuarios.FindAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            _context.usuarios.Remove(user);
+            await _context.SaveChangesAsync();
+
+            return user;
         }
     }
 }

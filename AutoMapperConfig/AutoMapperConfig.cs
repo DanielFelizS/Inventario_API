@@ -25,6 +25,10 @@ namespace Inventario.AutoMapperConfig
             
             CreateMap<UserDTO, User>();
             CreateMap<User, UserDTO>();
+            CreateMap<UserCreateDTO, UserDTO>();
+            CreateMap<UserDTO, UserCreateDTO>();
+            CreateMap<UserCreateDTO, User>();
+
         }
     }
 }

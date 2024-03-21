@@ -8,11 +8,6 @@ namespace Inventario.Models
 {
     public class Departamento
     {
-        // public Departamento()
-        // {
-        //     Dispositivos = new HashSet<Dispositivo>();
-        // }
-
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
@@ -20,6 +15,8 @@ namespace Inventario.Models
         public string Nombre { get; set; }
         [Required(ErrorMessage = "Una descripción es obligatorio")]
         public string Descripción { get; set; }
+        [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode=true)]
+        [DataType(DataType.Date)]
         public DateTime? Fecha_creacion { get; set; }
         [Required(ErrorMessage = "El nombre del encargado es obligatorio")]
         public string Encargado { get; set; }

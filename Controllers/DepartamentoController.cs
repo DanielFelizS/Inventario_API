@@ -72,7 +72,9 @@ namespace Inventario.Controllers
 
             if (!string.IsNullOrEmpty(search))
             {
-                consulta = consulta.Where(d => d.Nombre.Contains(search));
+                consulta = consulta.Where(d => d.Nombre != null && d.Nombre.Contains(search) ||
+                d.Fecha_creacion.ToString() != null && d.Fecha_creacion.ToString().Contains(search) ||
+                d.Encargado != null && d.Encargado.Contains(search));
             }
 
             var totalCount = await consulta.CountAsync();
@@ -83,11 +85,11 @@ namespace Inventario.Controllers
                 .Take(pageSize)
                 .ToListAsync();
 
-            var dispositivosDTO = _mapper.Map<List<DepartamentoDTO>>(paginatedDispositivos);
+            var departamentosDto = _mapper.Map<List<DepartamentoDTO>>(paginatedDispositivos);
 
             var paginatedList = new PaginatedList<DepartamentoDTO>
             {
-                Items = dispositivosDTO,
+                Items = departamentosDto,
                 TotalCount = totalCount,
                 PageIndex = pageNumber,
                 PageSize = pageSize,
@@ -114,6 +116,18 @@ namespace Inventario.Controllers
             }
 
             return departamento;
+        }
+        [AllowAnonymous]
+        [HttpGet("all", Name = "Departamentos")]
+        public async Task<ActionResult<IEnumerable<DepartamentoDTO>>>  Departamentos(int id)
+        {
+            var allDepartamento = await _context.departamento.ToListAsync();
+            var totalCount = allDepartamento.Count;
+            var DepartamentosDTO = _mapper.Map<List<DepartamentoDTO>>(allDepartamento);
+
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+            return DepartamentosDTO;
         }
         [Authorize(Roles = StaticUserRoles.ADMIN)]
         [HttpPost]

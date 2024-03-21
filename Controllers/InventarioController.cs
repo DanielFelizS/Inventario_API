@@ -87,7 +87,10 @@ namespace Inventario.Controllers
             // Filtrar por búsqueda si se proporciona
             if (!string.IsNullOrEmpty(search))
             {
-                consulta = consulta.Where(d => d.Nombre_equipo.Contains(search));
+                consulta = consulta.Where(d => d.Nombre_equipo != null && d.Nombre_equipo.Contains(search) ||
+                d.Serial_no != null && d.Serial_no.Contains(search) ||
+                d.Cod_inventario != null && d.Cod_inventario.Contains(search) ||
+                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search));
             }
 
             // Realizar la consulta paginada
@@ -158,6 +161,42 @@ namespace Inventario.Controllers
             };
 
             return dispositivoDTO;
+        }
+        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [AllowAnonymous]
+        [HttpGet("all", Name = "Dispositivos")]
+        public async Task<ActionResult<IEnumerable<DispositivoDTO>>> Dispositivos()
+        {
+            IQueryable<DispositivoDTO> consulta = _context.Dispositivos
+                .Include(d => d.departamento)
+                .Select(dispositivo => new DispositivoDTO
+                {
+                    Id = dispositivo.Id,
+                    Nombre_equipo = dispositivo.Nombre_equipo,
+                    Marca = dispositivo.Marca,
+                    Modelo = dispositivo.Modelo,
+                    Estado = dispositivo.Estado,
+                    Serial_no = dispositivo.Serial_no,
+                    Cod_inventario = dispositivo.Cod_inventario,
+                    Bienes_nacionales = dispositivo.Bienes_nacionales,
+                    Fecha_modificacion = dispositivo.Fecha_modificacion,
+                    Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_departamento = dispositivo.departamento.Nombre
+                });
+
+            var dispositivos = await consulta.ToListAsync();
+
+            if (dispositivos == null || dispositivos.Count == 0)
+            {
+                return NotFound();
+            }
+
+            var totalCount = await _context.Dispositivos.CountAsync();
+            
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            return dispositivos;
         }
         [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
         [HttpPost, Authorize]

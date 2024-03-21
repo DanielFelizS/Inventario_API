@@ -127,7 +127,7 @@ namespace Inventario.Services
             };
         }
 
-        public async Task<AuthServiceResponseDto> RegisterAsync(UserDTO userDto)
+        public async Task<AuthServiceResponseDto> RegisterAsync(UserCreateDTO userDto)
         {
             var isExistsUser = await _userManager.FindByNameAsync(userDto.UserName);
 
