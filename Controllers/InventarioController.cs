@@ -1,19 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
 using Inventario.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using Inventario.Controllers;
-using Inventario.AutoMapperConfig;
 using AutoMapper;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Previewer;
-using System.IO;
+using OfficeOpenXml;
 
 namespace Inventario.Controllers
 {
@@ -23,16 +22,16 @@ namespace Inventario.Controllers
         private readonly ILogger<DispositivoController> _logger;
         private readonly DataContext _context;
         private readonly IMapper _mapper;
-        int number = 0;
         private readonly IWebHostEnvironment _host;
-        
-        public DispositivoController(ILogger<DispositivoController> logger, DataContext context, IMapper mapper, IWebHostEnvironment host)
+        private readonly AuditoriaService _auditoriaService;
+
+        public DispositivoController(ILogger<DispositivoController> logger,DataContext context, IMapper mapper, IWebHostEnvironment host, AuditoriaService auditoriaService, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
             _mapper = mapper;
             _host = host;
-
+            _auditoriaService = auditoriaService;        
         }
         [AllowAnonymous]
         [HttpGet(Name = "GetDispositivos")]
@@ -87,10 +86,13 @@ namespace Inventario.Controllers
             // Filtrar por búsqueda si se proporciona
             if (!string.IsNullOrEmpty(search))
             {
-                consulta = consulta.Where(d => d.Nombre_equipo != null && d.Nombre_equipo.Contains(search) ||
+                consulta = consulta.Where(d => 
+                d.Nombre_equipo != null && d.Nombre_equipo.Contains(search) ||
                 d.Serial_no != null && d.Serial_no.Contains(search) ||
                 d.Cod_inventario != null && d.Cod_inventario.Contains(search) ||
-                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search));
+                d.Estado != null && d.Estado.Contains(search) ||
+                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search) ||
+                d.departamento.Nombre != null && d.departamento.Nombre.Contains(search));
             }
 
             // Realizar la consulta paginada
@@ -131,7 +133,7 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
         public async Task<ActionResult<DispositivoDTO>> GetDispositivo(int id)
         {
@@ -162,8 +164,7 @@ namespace Inventario.Controllers
 
             return dispositivoDTO;
         }
-        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
-        [AllowAnonymous]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet("all", Name = "Dispositivos")]
         public async Task<ActionResult<IEnumerable<DispositivoDTO>>> Dispositivos()
         {
@@ -198,8 +199,60 @@ namespace Inventario.Controllers
 
             return dispositivos;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
-        [HttpPost, Authorize]
+        [HttpGet("exportar-excel"), AllowAnonymous]
+        public async Task<IActionResult> ExportarExcel(string filter = null)
+        {
+            // Obtener los datos
+            IQueryable<Dispositivo> consulta = _context.Dispositivos.Include(d => d.departamento);
+
+            // Filtrar por búsqueda si se proporciona
+            if (!string.IsNullOrEmpty(filter))
+            {
+                consulta = consulta.Where(d => 
+                d.Nombre_equipo != null && d.Nombre_equipo.Contains(filter) ||
+                d.Serial_no != null && d.Serial_no.Contains(filter) ||
+                d.Cod_inventario != null && d.Cod_inventario.Contains(filter) ||
+                d.Estado != null && d.Estado.Contains(filter) ||
+                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(filter) ||
+                d.departamento.Nombre != null && d.departamento.Nombre.Contains(filter));
+            }
+            var dispositivos = 
+            await consulta
+            // await _context.Dispositivos
+                // .Include(d => d.departamento)
+                .Select(dispositivo => new
+                {
+                    dispositivo.Id,
+                    dispositivo.Nombre_equipo,
+                    dispositivo.Marca,
+                    dispositivo.Modelo,
+                    dispositivo.Estado,
+                    dispositivo.Serial_no,
+                    dispositivo.Cod_inventario,
+                    dispositivo.Bienes_nacionales,
+                    dispositivo.Fecha_modificacion,
+                    dispositivo.Propietario_equipo,
+                    Nombre_departamento = dispositivo.departamento.Nombre
+                })
+                .ToListAsync();
+
+            // Crear un archivo de Excel
+            using (var excel = new ExcelPackage())
+            {
+                var workSheet = excel.Workbook.Worksheets.Add("Equipos");
+                
+                // Cargar los datos en la hoja de Excel
+                workSheet.Cells.LoadFromCollection(dispositivos, true);
+
+                // Convertir el archivo de Excel en bytes
+                var excelBytes = excel.GetAsByteArray();
+
+                // Devolver el archivo de Excel como un FileContentResult
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Equipos.xlsx");
+            }
+        }
+        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] DispositivoCreateDTO dispositivo)
         {
             if (ModelState.IsValid)
@@ -209,13 +262,16 @@ namespace Inventario.Controllers
                 _context.Dispositivos.AddAsync(newDispositivo);
                 await _context.SaveChangesAsync();
 
+                string userName = User.Identity.Name;
+
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Agregar", "Se ha agregado un nuevo registro");
                 // Devolver una respuesta CreatedAtRoute con el dispositivo creado
                 return CreatedAtRoute("Getdispositivo", new { id = newDispositivo.Id }, newDispositivo);
             }
 
             return BadRequest(ModelState);
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] DispositivoCreateDTO dispositivo)
         {
@@ -235,6 +291,9 @@ namespace Inventario.Controllers
                 newDispositivo.DepartamentoId = dispositivo.DepartamentoId;
                 _context.Update(newDispositivo);
                 await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Editar", "Se ha editado un dispositivo");
                 return Ok("Se actualizó correctamente");
             }
             catch (Exception ex)
@@ -242,7 +301,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<Dispositivo>> Delete(int id)
         {
@@ -254,16 +313,32 @@ namespace Inventario.Controllers
 
             _context.Dispositivos.Remove(dispositivo);
             await _context.SaveChangesAsync();
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Eliminar", "Se ha eliminado un dispositivo");
 
             return dispositivo;
         }
         [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDispositivos")]
-        public async Task<IActionResult> DescargarPDF(int id)
+        public async Task<IActionResult> DescargarPDF(int id, string filter = null)
         {
-            var dispositivos = await (from dispositivo in _context.Dispositivos
-                join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
-                select new { Dispositivo = dispositivo, Departamento = departamento })
+            IQueryable<Dispositivo> consulta = _context.Dispositivos.Include(d => d.departamento);
+
+            // Filtrar por búsqueda si se proporciona
+            if (!string.IsNullOrEmpty(filter))
+            {
+                consulta = consulta.Where(d => d.Estado != null && d.Estado.Contains(filter));
+            }
+
+            // var dispositivos = await (from dispositivo in _context.Dispositivos
+            //     join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
+            //     select new { Dispositivo = dispositivo, Departamento = departamento })
+            var dispositivos= await consulta
+                .Select(d => new
+                {
+                    Dispositivo = d,
+                    Nombre_departamento = d.departamento.Nombre
+                })
                 .ToListAsync();
             
             var data = Document.Create(document =>
@@ -284,32 +359,27 @@ namespace Inventario.Controllers
                             col.Item().AlignCenter().Text("codigo@example.com").FontSize(8);
                         });
                     });
-
                     page.Content().PaddingVertical(10).Column(col1 =>
                     {
                         col1.Item().Column(col2 =>
                         {
                             col2.Item().Text("Datos del empleado").Underline().Bold();
-
                             col2.Item().Text(txt =>
                             {
                                 txt.Span("Nombre: ").SemiBold().FontSize(10);
                                 txt.Span("Faustino Acevedo").FontSize(10);
                             });
-
                             col2.Item().Text(txt =>
                             {
                                 txt.Span("Correo: ").SemiBold().FontSize(10);
                                 txt.Span("fautino.acevedo@mived.gob.do").FontSize(10);
                             });
-
                             col2.Item().Text(txt =>
                             {
                                 txt.Span("Departamento: ").SemiBold().FontSize(10);
                                 txt.Span("Tecnología").FontSize(10);
                             });
                             col2.Item().Text("Dispositivos").Underline().Bold();
-
                         });
 
                         col1.Item().LineHorizontal(0.5f);
@@ -356,7 +426,7 @@ namespace Inventario.Controllers
                                 var bienes = dispositivo.Dispositivo.Bienes_nacionales.ToString();
                                 var fecha = dispositivo.Dispositivo.Fecha_modificacion?.ToString("dd-MM-yy");
                                 var propietario = dispositivo.Dispositivo.Propietario_equipo;
-                                var Nombre_departamento = dispositivo.Departamento.Nombre;
+                                var Nombre_departamento = dispositivo.Dispositivo.departamento.Nombre;
 
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);

@@ -1,4 +1,3 @@
-using Inventario.Controllers;
 using Inventario.Data;
 using Inventario.Authorization;
 using Inventario.Services;
@@ -6,16 +5,8 @@ using Inventario.Interface;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text;
-using Inventario.Authorization;
-using Swashbuckle.AspNetCore.Filters;
 using Microsoft.OpenApi.Models;
 using Inventario.AutoMapperConfig;
 using System.Text.Json.Serialization;
@@ -87,6 +78,7 @@ builder.Services
     });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuditoriaService>();
 
 builder.Services.AddSwaggerGen(options =>
 {

@@ -1,4 +1,3 @@
-using static System.DateTime;
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -14,7 +13,7 @@ namespace Inventario.DTOs
         public string Serial_no { get; set; } = "No Tiene";
         public string Cod_inventario { get; set; } = "No Tiene";
         public int Bienes_nacionales { get; set; } = 0;
-        public DateTime? Fecha_modificacion { get; set; }
+        public DateTime? Fecha_modificacion { get; set; } = DateTime.Now;
         public string Propietario_equipo { get; set; }
         [JsonIgnore]
         public int DepartamentoId{ get; set; }

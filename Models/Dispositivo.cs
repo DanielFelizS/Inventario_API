@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using Inventario.Data;
-using Inventario.Models;
 
 namespace Inventario.Models
 {
@@ -44,8 +42,8 @@ namespace Inventario.Models
         public int Bienes_nacionales { get; set; } = 0;
         [DisplayFormat(DataFormatString = "{0:dd-MM-yyyy}", ApplyFormatInEditMode=true)]
         [DataType(DataType.Date)]
-        public DateTime? Fecha_modificacion { get; set; }
-        public string? Propietario_equipo { get; set; }
+        public DateTime? Fecha_modificacion { get; set; } = DateTime.Now;
+        public string Propietario_equipo { get; set; }
 
         // Relación entre el nombre del departamento y la clase Dispositivos
         public int DepartamentoId{ get; set; }
@@ -55,5 +53,18 @@ namespace Inventario.Models
 
         public virtual ICollection<PC> Computer { get; set; }
 
+        public void RegistrarAuditoria(DataContext context, string usuario)
+        {
+            var historialEntry = new Auditoria
+            {
+                Tabla = "Dispositivos",
+                Usuario = usuario,
+                Acción = "Agregar",
+                Descripción = "Se ha agregado un nuevo dispositivo",
+                Fecha = DateTime.Now
+            };
+            context.Set<Auditoria>().Add(historialEntry);
+            context.SaveChanges();
+        }
     }
 }

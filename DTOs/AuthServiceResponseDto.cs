@@ -1,5 +1,3 @@
-using Inventario.DTOs;
-
 namespace Inventario.DTOs
 {
     public class AuthServiceResponseDto

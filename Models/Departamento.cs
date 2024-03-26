@@ -1,8 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-using Inventario.Data;
-using Inventario.Models;
 
 namespace Inventario.Models
 {

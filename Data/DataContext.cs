@@ -1,9 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Inventario.Models;
-using Inventario.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using System.Globalization;
 
 namespace Inventario.Data
 {
@@ -13,11 +9,11 @@ namespace Inventario.Data
             : base(options)
         {
         }
-
         public DbSet<Dispositivo> Dispositivos { get; set; }
         public DbSet<Departamento> departamento { get; set; }
         public DbSet<PC> Computer {get; set;}
         public DbSet<User> usuarios { get; set; }
+        public DbSet<Auditoria> historial { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -92,7 +88,15 @@ namespace Inventario.Data
             modelBuilder.Entity<User>()
                 .HasIndex(d => d.UserName)
                 .IsUnique();
+
+            modelBuilder.Entity<Auditoria>()
+                .ToTable("historial");
             
-        }
+            modelBuilder.Entity<Dispositivo>()
+                .ToTable("Dispositivos", options =>
+                {
+                    options.IsTemporal();
+                });
     }
+}
 }

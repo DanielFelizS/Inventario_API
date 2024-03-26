@@ -42,6 +42,26 @@
               "target": "Package",
               "version": "[12.0.1, )"
             },
+            "EPPlus": {
+              "target": "Package",
+              "version": "[7.0.10, )"
+            },
+            "EntityFrameworkCore.Triggered": {
+              "target": "Package",
+              "version": "[3.2.2, )"
+            },
+            "EntityFrameworkCore.Triggered.Abstractions": {
+              "target": "Package",
+              "version": "[3.2.2, )"
+            },
+            "EntityFrameworkCore.Triggers": {
+              "target": "Package",
+              "version": "[1.2.3, )"
+            },
+            "Laraue.EfCoreTriggers": {
+              "target": "Package",
+              "version": "[1.3.2, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[8.0.0, )"

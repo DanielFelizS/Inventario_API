@@ -1,19 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
 using Inventario.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using Inventario.Controllers;
-using Inventario.AutoMapperConfig;
 using AutoMapper;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Previewer;
-using System.IO;
+using OfficeOpenXml;
 
 namespace Inventario.Controllers
 {
@@ -23,15 +22,17 @@ namespace Inventario.Controllers
         private readonly ILogger<PcController> _logger;
         private readonly DataContext _context;
         private readonly IMapper _mapper;
-        int number = 0;
         private readonly IWebHostEnvironment _host;
+        private readonly AuditoriaService _auditoriaService;
+        int number = 0;
         
-        public PcController(ILogger<PcController> logger, DataContext context, IMapper mapper, IWebHostEnvironment host)
+        public PcController(ILogger<PcController> logger, DataContext context, IMapper mapper, IWebHostEnvironment host, AuditoriaService auditoriaService, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
             _mapper = mapper;
             _host = host;
+            _auditoriaService = auditoriaService;
         }
         [HttpGet(Name = "GetComputers"), AllowAnonymous]
         public async Task<ActionResult<PaginatedList<PCDTO>>> GetComputers(int id, int pageNumber = 1, int pageSize = 6)
@@ -129,7 +130,7 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet("{id}", Name = "GetComputer")]
         public async Task<ActionResult<PCDTO>> GetComputer(int id)
         {
@@ -157,7 +158,58 @@ namespace Inventario.Controllers
 
             return pcDTO;
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [HttpGet("exportar-excel")]
+        public async Task<ActionResult> ExportarExcel(string filter = null)
+        {
+            // Obtener los datos
+
+            IQueryable<PC> consulta = _context.Computer;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo != null && pc.Dispositivos.Nombre_equipo.Contains(filter) ||
+                pc.RAM != null && pc.RAM.Contains(filter) ||
+                pc.Disco_duro != null && pc.Disco_duro.Contains(filter) ||
+                pc.Procesador != null && pc.Procesador.Contains(filter) ||
+                pc.Ventilador != null && pc.Ventilador.Contains(filter) ||
+                pc.FuentePoder != null && pc.FuentePoder.Contains(filter));
+            }
+
+            var computer = await consulta
+                .Join(_context.Dispositivos,
+                    pc => pc.Equipo_Id,
+                    dispositivo => dispositivo.Id,
+                    (pc, dispositivo) => new PCDTO
+                    {
+                        Id = pc.Id,
+                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        RAM = pc.RAM ?? "No Tiene",
+                        Disco_duro = pc.Disco_duro ?? "No Tiene",
+                        Procesador = pc.Procesador ?? "No Tiene",
+                        Ventilador = pc.Ventilador ?? "No Tiene",
+                        FuentePoder = pc.FuentePoder ?? "No Tiene",
+                        MotherBoard = pc.MotherBoard ?? "No Tiene",
+                        Tipo_MotherBoard = pc.Tipo_MotherBoard ?? "No Tiene"
+                    })
+                .ToListAsync();
+
+
+            // Crear un archivo de Excel
+            using (var excel = new ExcelPackage())
+            {
+                var workSheet = excel.Workbook.Worksheets.Add("Componentes");
+                
+                // Cargar los datos en la hoja de Excel
+                workSheet.Cells.LoadFromCollection(computer, true);
+
+                // Convertir el archivo de Excel en bytes
+                var excelBytes = excel.GetAsByteArray();
+
+                // Devolver el archivo de Excel como un FileContentResult
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Computadoras.xlsx");
+            }
+        }
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] PcCreateDTO computer)
         {
@@ -169,6 +221,9 @@ namespace Inventario.Controllers
                 _context.Computer.Add(newComputer);
                 await _context.SaveChangesAsync();
 
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Computadoras", userName , "Agregar", "Una nueva computadora ha sido agregada");
+
                 // Devolver una respuesta CreatedAtRoute con el computer creado
                 return CreatedAtRoute("GetComputer", new { id = computer.Id }, newComputer);
             }
@@ -176,7 +231,7 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] PCDTO computer)
         {
@@ -196,6 +251,10 @@ namespace Inventario.Controllers
                 newComputer.Equipo_Id = computer.Equipo_Id;
                 _context.Update(newComputer);
                 await _context.SaveChangesAsync();
+
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Computadoras", userName , "Editar", "Los datos de una computadora han sido editados");
+
                 return Ok("Se actualizó correctamente");
             }
             catch (Exception ex)
@@ -203,7 +262,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<PC>> Delete(int id)
         {
@@ -215,6 +274,9 @@ namespace Inventario.Controllers
 
             _context.Computer.Remove(computer);
             await _context.SaveChangesAsync();
+
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Computadoras", userName , "Eliminar", "Una computadora ha sido eliminada");
 
             return computer;
         }

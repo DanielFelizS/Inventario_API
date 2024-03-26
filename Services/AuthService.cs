@@ -6,8 +6,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 
 namespace Inventario.Services
@@ -24,7 +22,6 @@ namespace Inventario.Services
             _roleManager = roleManager;
             _configuration = configuration;
         }
-
         public async Task<AuthServiceResponseDto> LoginAsync(LoginDTO loginDto)
         {
             var user = await _userManager.FindByNameAsync(loginDto.UserName);
@@ -69,7 +66,6 @@ namespace Inventario.Services
                 Message = token
             };
         }
-
         public async Task<AuthServiceResponseDto> AddAdminAsync(UpdatePermissionDto updatePermissionDto)
         {
             var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
@@ -104,7 +100,6 @@ namespace Inventario.Services
                 Message = $"El usuario {updatePermissionDto.UserName} es ahora un admin"
             };
         }
-
         public async Task<AuthServiceResponseDto> AddSoporteAsync(UpdatePermissionDto updatePermissionDto)
         {
             var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
@@ -126,16 +121,23 @@ namespace Inventario.Services
                 Message = $"El usuario {updatePermissionDto.UserName} es ahora parte del equipo de soporte técnico"
             };
         }
-
         public async Task<AuthServiceResponseDto> RegisterAsync(UserCreateDTO userDto)
         {
             var isExistsUser = await _userManager.FindByNameAsync(userDto.UserName);
+            var isExistsEmail = await _userManager.FindByNameAsync(userDto.Email);
 
             if (isExistsUser != null)
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = false,
                     Message = $"El usuario {userDto.UserName} ya existe"
+                };
+
+            else if (isExistsEmail != null)
+                return new AuthServiceResponseDto()
+                {
+                    IsSucceed = false,
+                    Message = $"El correo electrónico {userDto.Email} ya existe"
                 };
             
             ApplicationUser newUser = new ApplicationUser()
@@ -172,14 +174,14 @@ namespace Inventario.Services
                 Message = "El usuario ha sido creado correctamente"
             };
         }
-
         public async Task<AuthServiceResponseDto> SeedRolesAsync()
         {
             bool isSoporteRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.SOPORTE);
             bool isAdminRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.ADMIN);
+            bool isSuperAdminRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.SUPERADMIN);
             bool isLectorRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.Lector);
 
-            if (isSoporteRoleExists && isAdminRoleExists && isLectorRoleExists)
+            if (isSoporteRoleExists && isAdminRoleExists && isLectorRoleExists && isSuperAdminRoleExists)
                 return new AuthServiceResponseDto()
                 {
                     IsSucceed = true,
@@ -188,6 +190,7 @@ namespace Inventario.Services
 
             await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.Lector));
             await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.ADMIN));
+            await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.SUPERADMIN));
             await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.SOPORTE));
         
             return new AuthServiceResponseDto()
@@ -196,7 +199,6 @@ namespace Inventario.Services
                 Message = "Role Seeding Done Successfully"
             };
         }
-
         private string GenerateNewJsonWebToken(List<Claim> claims)
         {
             var authSecret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Secret"]));

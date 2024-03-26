@@ -1,23 +1,16 @@
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using Inventario.Authorization;
-using Inventario.DTOs;
-using Inventario.Interface;
-using Inventario.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using Inventario.Models;
-using Inventario.Authorization;
+using Inventario.DTOs;
 using Inventario.Data;
-using Inventario.Controllers;
-using Inventario.AutoMapperConfig;
+using Inventario.Interface;
+using Inventario.Authorization;
 using AutoMapper;
 
 namespace Inventario.Controllers
@@ -31,14 +24,16 @@ namespace Inventario.Controllers
         private readonly DataContext _context;
         private readonly IMapper _mapper;
         // private readonly IWebHostEnvironment _host;
+        private readonly AuditoriaService _auditoriaService;
 
-        public LoginController(IAuthService authService, ILogger<LoginController> logger, DataContext context, IMapper mapper)
+        public LoginController(IAuthService authService, ILogger<LoginController> logger, DataContext context, IMapper mapper, AuditoriaService auditoriaService, IHttpContextAccessor httpContextAccessor)
         {
             _authService = authService;
             _logger = logger;
             _context = context;
             _mapper = mapper;
             // _host = host;
+            _auditoriaService = auditoriaService;
         }
 
         // Route For Seeding my roles to DB
@@ -49,6 +44,7 @@ namespace Inventario.Controllers
             var seerRoles = await _authService.SeedRolesAsync();
             return Ok(seerRoles);
         }
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet(Name = "GetUsuarios")]
         public async Task<ActionResult<PaginatedList<UserDTO>>> GetUsuarios(int pageNumber = 1, int pageSize = 6)
         {
@@ -85,7 +81,7 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
-        [HttpGet("search")]
+        [HttpGet("search"), AllowAnonymous]
         public async Task<ActionResult<PaginatedList<UserDTO>>> Search(int pageNumber = 1, int pageSize = 6, string search = null)
         {
 
@@ -141,6 +137,7 @@ namespace Inventario.Controllers
 
             return user;
         }
+        // [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         [Route("registro")]
         public async Task<ActionResult<User>> Register([FromBody] UserCreateDTO userDto)
@@ -159,6 +156,7 @@ namespace Inventario.Controllers
             return BadRequest(registerResult);
         }
         // Route -> Login
+        [AllowAnonymous]
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO loginDto)
@@ -170,6 +168,7 @@ namespace Inventario.Controllers
             return Unauthorized(loginResult);
         }
         // Route -> make user -> admin
+        // [Authorize(Roles = StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         [Route("add-Admin")]
         public async Task<IActionResult> AddAdmin([FromBody] UpdatePermissionDto updatePermissionDto)
@@ -181,6 +180,7 @@ namespace Inventario.Controllers
             return BadRequest(operationResult);
         }
         // Route -> make user -> soporte
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         [Route("add-Soporte")]
         public async Task<IActionResult> AddSoporte([FromBody] UpdatePermissionDto updatePermissionDto)
@@ -191,6 +191,7 @@ namespace Inventario.Controllers
 
             return BadRequest(operationResult);
         }
+        [Authorize(Roles = StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] UserCreateDTO user)
         {
@@ -216,6 +217,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
+        [Authorize(Roles = StaticUserRoles.SUPERADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<User>> Delete(string id)
         {

@@ -1,19 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
 using Inventario.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using Inventario.Controllers;
-using Inventario.AutoMapperConfig;
 using AutoMapper;
 using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Previewer;
-using System.IO;
+using OfficeOpenXml;
 
 namespace Inventario.Controllers
 {
@@ -23,18 +22,19 @@ namespace Inventario.Controllers
         private readonly ILogger<DepartamentoController> _logger;
         private readonly DataContext _context;
         private readonly IMapper _mapper;
-        int number = 0;
         private readonly IWebHostEnvironment _host;
-        
-        public DepartamentoController(ILogger<DepartamentoController> logger, DataContext context, IMapper mapper,  IWebHostEnvironment host)
+        private readonly AuditoriaService _auditoriaService;
+        int number = 0;
+
+        public DepartamentoController(ILogger<DepartamentoController> logger, DataContext context, IMapper mapper,  IWebHostEnvironment host, AuditoriaService auditoriaService, IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger;
             _context = context;
             _mapper = mapper;
             _host = host;
-
+            _auditoriaService = auditoriaService;      
         }
-        // [Authorize(Roles = StaticUserRoles.ADMIN)]
+        // [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet(Name = "GetDepartamentos"), AllowAnonymous]
         public async Task<ActionResult<PaginatedList<DepartamentoDTO>>> GetDepartamentos(int id, int pageNumber = 1, int pageSize = 6)
         {
@@ -104,7 +104,7 @@ namespace Inventario.Controllers
             // Devolver la lista paginada de dispositivos
             return paginatedList;
         }
-        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet("{id}", Name = "GetDepartamento")]
         public async Task<ActionResult<Departamento>> GetDepartamento(int id)
         {
@@ -129,7 +129,35 @@ namespace Inventario.Controllers
             Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
             return DepartamentosDTO;
         }
-        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [HttpGet("exportar-excel")]
+        public async Task<ActionResult<DepartamentoDTO>> ExportarExcel(string filter = null)
+        {
+            // Obtener los datos
+            var consulta = _context.departamento.AsQueryable();
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                consulta = consulta.Where(d => d.Nombre != null && d.Nombre.Contains(filter) ||
+                d.Fecha_creacion.ToString() != null && d.Fecha_creacion.ToString().Contains(filter) ||
+                d.Encargado != null && d.Encargado.Contains(filter));
+            }
+            var departamentos = await consulta.ToListAsync();
+            var DepartamentosDTO = _mapper.Map<List<DepartamentoDTO>>(departamentos);
+
+            // Crear un archivo de Excel
+            using (var excel = new ExcelPackage())
+            {
+                var workSheet = excel.Workbook.Worksheets.Add("Departamentos");
+                
+                // Cargar los datos en la hoja de Excel
+                workSheet.Cells.LoadFromCollection(DepartamentosDTO, true);
+                // Convertir el archivo de Excel en bytes
+                var excelBytes = excel.GetAsByteArray();
+                // Devolver el archivo de Excel como un FileContentResult
+                return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Departamentos.xlsx");
+            }
+        }
+        // [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] DepartamentoDTO departamento)
         {
@@ -141,6 +169,9 @@ namespace Inventario.Controllers
                 _context.departamento.Add(newDepartamento);
                 await _context.SaveChangesAsync();
 
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Agregar", "Un nuevo departamento ha sido agregado");
+
                 // Devolver una respuesta CreatedAtRoute con el dispositivo creado
                 return CreatedAtRoute("GetDepartamento", new { id = departamento.Id }, newDepartamento);
             }
@@ -148,7 +179,7 @@ namespace Inventario.Controllers
             // Si el modelo no es válido, devolver una respuesta BadRequest
             return BadRequest(ModelState);
         }
-        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] DepartamentoDTO departamento)
         {
@@ -167,6 +198,8 @@ namespace Inventario.Controllers
                 Departamento newDepartamento = _mapper.Map<Departamento>(departamento);
                 _context.Update(newDepartamento);
                 await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Editar", "Se han editado los datos de un departamento");
                 return Ok("Se actualizó correctamente");
             }
             catch (Exception ex)
@@ -174,7 +207,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<Departamento>> Delete(int id)
         {
@@ -187,14 +220,26 @@ namespace Inventario.Controllers
 
             _context.departamento.Remove(departamento);
             await _context.SaveChangesAsync();
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Eliminar", "Se ha eliminado un departamento");
 
             return departamento;
         }
         [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDepartamento")]
-        public async Task<IActionResult> DescargarPDF(int id)
+        public async Task<IActionResult> DescargarPDF(int id, string filter = null)
         {
-            var Departamento = await _context.departamento.ToListAsync();
+            var consulta = _context.departamento.AsQueryable();
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                consulta = consulta.Where(d => d.Nombre != null && d.Nombre.Contains(filter) ||
+                d.Fecha_creacion.ToString() != null && d.Fecha_creacion.ToString().Contains(filter) ||
+                d.Encargado != null && d.Encargado.Contains(filter));
+            }
+            // Obtener los dispositivos paginados
+            var Departamento = await consulta.ToListAsync();
+            // var Departamento = await _context.departamento.ToListAsync();
             
             var data = Document.Create(document =>
             {
@@ -207,7 +252,6 @@ namespace Inventario.Controllers
                         var rutaImagen = Path.Combine(_host.WebRootPath, "images/MIVED.png");
                         byte[] imageData = System.IO.File.ReadAllBytes(rutaImagen);
 
-                         //row.ConstantItem(140).Height(60).Placeholder();
                         row.ConstantItem(150).Image(imageData);
                         row.RelativeItem().Column(col =>
                         {
@@ -280,7 +324,7 @@ namespace Inventario.Controllers
                                 var fecha = departamento.Fecha_creacion?.ToString("dd-MM-yy");;
                                 var encargado = departamento.Encargado;
 
-                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Text(id).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(descripcion).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(fecha).FontSize(10);
