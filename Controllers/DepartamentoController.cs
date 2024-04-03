@@ -13,6 +13,7 @@ using Inventario.Authorization;
 using AutoMapper;
 using QuestPDF.Fluent;
 using OfficeOpenXml;
+using ClosedXML.Excel;
 
 namespace Inventario.Controllers
 {
@@ -119,15 +120,25 @@ namespace Inventario.Controllers
         }
         [AllowAnonymous]
         [HttpGet("all", Name = "Departamentos")]
-        public async Task<ActionResult<IEnumerable<DepartamentoDTO>>>  Departamentos(int id)
+        public async Task<ActionResult<IEnumerable<DepartamentoDTO>>> Departamentos(int id)
         {
-            var allDepartamento = await _context.departamento.ToListAsync();
-            var totalCount = allDepartamento.Count;
-            var DepartamentosDTO = _mapper.Map<List<DepartamentoDTO>>(allDepartamento);
+            try
+            {
+                var allDepartamento = await _context.departamento.ToListAsync();
+                var totalCount = allDepartamento.Count;
+                var DepartamentosDTO = _mapper.Map<List<DepartamentoDTO>>(allDepartamento);
 
-            Response.Headers["X-Total-Count"] = totalCount.ToString();
-            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
-            return DepartamentosDTO;
+                Response.Headers["X-Total-Count"] = totalCount.ToString();
+                Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+                return DepartamentosDTO;
+            } catch (Exception ex)
+            {
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontraron los datos");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+                
+                else return StatusCode(500, $"Error al importar el archivo: {ex.Message}");
+            }
         }
         [HttpGet("exportar-excel")]
         public async Task<ActionResult<DepartamentoDTO>> ExportarExcel(string filter = null)
@@ -153,31 +164,75 @@ namespace Inventario.Controllers
                 workSheet.Cells.LoadFromCollection(DepartamentosDTO, true);
                 // Convertir el archivo de Excel en bytes
                 var excelBytes = excel.GetAsByteArray();
+
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Departamento", userName, "Reporte", "Se exportó un archivo .xlsx");
                 // Devolver el archivo de Excel como un FileContentResult
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Departamentos.xlsx");
+            }
+        }
+        [HttpPost("importar-excel")]
+        public async Task<IActionResult> ImportExcel(IFormFile excel)
+        {
+            try
+            {
+                var workbook = new XLWorkbook(excel.OpenReadStream());
+
+                var hoja = workbook.Worksheet(1);
+
+                var primeraFilaUsada = hoja.FirstRowUsed().RangeAddress.FirstAddress.RowNumber;
+                var ultimaFilaUsada = hoja.LastRowUsed().RangeAddress.FirstAddress.RowNumber;
+
+                var departamentos = new List<Departamento>();
+
+                for (int i = primeraFilaUsada + 1; i <= ultimaFilaUsada; i++)
+                {
+                    var fila = hoja.Row(i);
+                    var departamentoDto = new Departamento {
+                        Nombre = fila.Cell(2).GetString(),
+                        Descripción = fila.Cell(3).GetString(),
+                        Fecha_creacion = fila.Cell(4).GetDateTime(),
+                        Encargado = fila.Cell(5).GetString()
+                    };
+                    
+                    departamentos.Add(departamentoDto);
+                }            
+                _context.AddRange(departamentos);
+                await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Departamento", userName, "Importar", "Se importó un archivo .xlsx");
+
+                return Ok("Importación exitosa");
+            } catch (Exception ex)
+            {
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró el id");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+                
+                else return StatusCode(500, $"Error al importar el archivo: {ex.Message}");
             }
         }
         // [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] DepartamentoDTO departamento)
         {
-            if (ModelState.IsValid)
-            {
-                // Agregar el departamento al contexto y guardar los cambios en la base de datos
-                Departamento newDepartamento = _mapper.Map<Departamento>(departamento);
+                if (ModelState.IsValid)
+                {
+                    // Agregar el departamento al contexto y guardar los cambios en la base de datos
+                    Departamento newDepartamento = _mapper.Map<Departamento>(departamento);
 
-                _context.departamento.Add(newDepartamento);
-                await _context.SaveChangesAsync();
+                    _context.departamento.Add(newDepartamento);
+                    await _context.SaveChangesAsync();
 
-                string userName = User.Identity.Name;
-                _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Agregar", "Un nuevo departamento ha sido agregado");
+                    string userName = User.Identity.Name;
+                    _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Agregar", "Un nuevo departamento ha sido agregado");
 
-                // Devolver una respuesta CreatedAtRoute con el dispositivo creado
-                return CreatedAtRoute("GetDepartamento", new { id = departamento.Id }, newDepartamento);
-            }
+                    // Devolver una respuesta CreatedAtRoute con el dispositivo creado
+                    return CreatedAtRoute("GetDepartamento", new { id = departamento.Id }, newDepartamento);
+                }
 
-            // Si el modelo no es válido, devolver una respuesta BadRequest
-            return BadRequest(ModelState);
+                // Si el modelo no es válido, devolver una respuesta BadRequest
+                return BadRequest(ModelState);
         }
         [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
@@ -204,6 +259,9 @@ namespace Inventario.Controllers
             }
             catch (Exception ex)
             {
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró el id");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
@@ -211,19 +269,28 @@ namespace Inventario.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Departamento>> Delete(int id)
         {
-            var departamento = await _context.departamento.FindAsync(id);
+            try {
+                var departamento = await _context.departamento.FindAsync(id);
 
-            if (departamento== null)
+                if (departamento == null)
+                {
+                    return NotFound();
+                }
+
+                _context.departamento.Remove(departamento);
+                await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Eliminar", "Se ha eliminado un departamento");
+
+                return departamento;
+            } catch (Exception ex)
             {
-                return NotFound();
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró el id");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+                
+                else return StatusCode(500, $"Error al importar el archivo: {ex.Message}");
             }
-
-            _context.departamento.Remove(departamento);
-            await _context.SaveChangesAsync();
-            string userName = User.Identity.Name;
-            _auditoriaService.RegistrarAuditoria("Departamentos", userName , "Eliminar", "Se ha eliminado un departamento");
-
-            return departamento;
         }
         [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDepartamento")]
@@ -344,7 +411,8 @@ namespace Inventario.Controllers
                     });
                 });
             }).GeneratePdf();
-
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Departamento", userName, "Reporte", "Se exportó un archivo .pdf");
             Stream stream = new MemoryStream(data);
             return File(stream, "application/pdf", "detalledepartamento.pdf");
         }

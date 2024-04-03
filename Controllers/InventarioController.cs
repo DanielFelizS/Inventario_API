@@ -13,6 +13,7 @@ using Inventario.Authorization;
 using AutoMapper;
 using QuestPDF.Fluent;
 using OfficeOpenXml;
+using ClosedXML.Excel;
 
 namespace Inventario.Controllers
 {
@@ -87,20 +88,33 @@ namespace Inventario.Controllers
             if (!string.IsNullOrEmpty(search))
             {
                 consulta = consulta.Where(d => 
-                d.Nombre_equipo != null && d.Nombre_equipo.Contains(search) ||
-                d.Serial_no != null && d.Serial_no.Contains(search) ||
-                d.Cod_inventario != null && d.Cod_inventario.Contains(search) ||
-                d.Estado != null && d.Estado.Contains(search) ||
-                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search) ||
-                d.departamento.Nombre != null && d.departamento.Nombre.Contains(search));
+                    (d.Nombre_equipo != null && d.Nombre_equipo.Contains(search)) ||
+                    (d.Marca != null && d.Marca.Contains(search)) ||
+                    (d.Modelo != null && d.Modelo.Contains(search)) ||
+                    (d.Serial_no != null && d.Serial_no.Contains(search)) ||
+                    (d.Cod_inventario != null && d.Cod_inventario.Contains(search)) ||
+                    (d.Estado != null && d.Estado.Contains(search)) ||
+                    (d.Propietario_equipo != null && d.Propietario_equipo.Contains(search)) ||
+                    (d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search)) ||
+                    (d.departamento.Nombre != null && d.departamento.Nombre.Contains(search)));
+
             }
 
             // Realizar la consulta paginada
             var paginatedDispositivos = await consulta
-                .Select(d => new
+                .Select(dispositivo => new DispositivoDTO
                 {
-                    Dispositivo = d,
-                    Nombre_departamento = d.departamento.Nombre
+                    Id = dispositivo.Id,
+                    Nombre_equipo = dispositivo.Nombre_equipo,
+                    Marca = dispositivo.Marca,
+                    Modelo = dispositivo.Modelo,
+                    Estado = dispositivo.Estado,
+                    Serial_no = dispositivo.Serial_no,
+                    Cod_inventario = dispositivo.Cod_inventario,
+                    Bienes_nacionales = dispositivo.Bienes_nacionales,
+                    Fecha_modificacion = dispositivo.Fecha_modificacion,
+                    Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_departamento = dispositivo.departamento.Nombre
                 })
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -112,7 +126,7 @@ namespace Inventario.Controllers
             // Mapear la lista de dispositivos a una lista de DispositivoDTO
             var dispositivosDTO = paginatedDispositivos.Select(d =>
             {
-                var dispositivoDTO = _mapper.Map<DispositivoDTO>(d.Dispositivo);
+                var dispositivoDTO = _mapper.Map<DispositivoDTO>(d);
                 dispositivoDTO.Nombre_departamento = d.Nombre_departamento;
                 return dispositivoDTO;
             }).ToList();
@@ -133,8 +147,62 @@ namespace Inventario.Controllers
 
             return paginatedList;
         }
+        [AllowAnonymous]
+        [HttpGet("all/search")]
+        public async Task<ActionResult<IEnumerable<DispositivoDTO>>> Search(int id, string search = null)
+        {
+            // Consulta inicial de dispositivos
+            IQueryable<DispositivoDTO> consulta = _context.Dispositivos
+                .Include(d => d.departamento)
+                .Select(dispositivo => new DispositivoDTO
+                {
+                    Id = dispositivo.Id,
+                    Nombre_equipo = dispositivo.Nombre_equipo,
+                    Marca = dispositivo.Marca,
+                    Modelo = dispositivo.Modelo,
+                    Estado = dispositivo.Estado,
+                    Serial_no = dispositivo.Serial_no,
+                    Cod_inventario = dispositivo.Cod_inventario,
+                    Bienes_nacionales = dispositivo.Bienes_nacionales,
+                    Fecha_modificacion = dispositivo.Fecha_modificacion,
+                    Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_departamento = dispositivo.departamento.Nombre
+                });
+
+            // Filtrar por búsqueda
+            if (!string.IsNullOrEmpty(search))
+            {
+                consulta = consulta.Where(d => 
+                d.Nombre_equipo != null && d.Nombre_equipo.Contains(search) ||
+                d.Modelo != null && d.Modelo.Contains(search) ||
+                d.Marca != null && d.Marca.Contains(search) ||
+                d.Serial_no != null && d.Serial_no.Contains(search) ||
+                d.Cod_inventario != null && d.Cod_inventario.Contains(search) ||
+                d.Estado != null && d.Estado.Contains(search) ||
+                d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search) ||
+                d.Propietario_equipo != null && d.Propietario_equipo.Contains(search)
+                );
+            }
+
+            // Realizar la consulta paginada
+            var dispositivos = await consulta.ToListAsync();
+
+            if (dispositivos == null || dispositivos.Count == 0)
+            {
+                return NotFound();
+            }
+
+            var totalCount = await _context.Dispositivos.CountAsync();
+
+            // Agrega el encabezado 'X-Total-Count' a la respuesta
+            Response.Headers["X-Total-Count"] = totalCount.ToString();
+            // Exponer el encabezado 'X-Total-Count'
+            Response.Headers.Append("Access-Control-Expose-Headers", "X-Total-Count");
+
+            return dispositivos;
+        }
         [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
-        [HttpGet("{id}", Name = "GetDispositivo"), Authorize]
+        [HttpGet("{id}", Name = "GetDispositivo")]
         public async Task<ActionResult<DispositivoDTO>> GetDispositivo(int id)
         {
             var dispositivo = await _context.Dispositivos
@@ -247,6 +315,9 @@ namespace Inventario.Controllers
                 // Convertir el archivo de Excel en bytes
                 var excelBytes = excel.GetAsByteArray();
 
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName, "Reporte", "Se exportó un archivo .xlsx");
+
                 // Devolver el archivo de Excel como un FileContentResult
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Equipos.xlsx");
             }
@@ -271,7 +342,75 @@ namespace Inventario.Controllers
 
             return BadRequest(ModelState);
         }
-        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [HttpPost("importar-excel")]
+        public async Task<IActionResult> ImportExcel(IFormFile excel)
+        {
+            try {
+
+                if (excel == null || excel.Length == 0)
+                {
+                    return BadRequest("No se ha seleccionado ningún archivo o el archivo está vacío.");
+                }
+                var workbook = new XLWorkbook(excel.OpenReadStream());
+
+                var hoja = workbook.Worksheet(1);
+
+                var primeraFilaUsada = hoja.FirstRowUsed().RangeAddress.FirstAddress.RowNumber;
+                var ultimaFilaUsada = hoja.LastRowUsed().RangeAddress.FirstAddress.RowNumber;
+
+                var dispositivos = new List<Dispositivo>();
+
+                for (int i = primeraFilaUsada + 1; i <= ultimaFilaUsada; i++)
+                {
+                    var fila = hoja.Row(i);
+                    var dispositivoDTO = new DispositivoDTO {
+                        Nombre_equipo = fila.Cell(2).GetString(),
+                        Marca = fila.Cell(3).GetString(),
+                        Modelo = fila.Cell(4).GetString(),
+                        Estado = fila.Cell(5).GetString(),
+                        Serial_no = fila.Cell(6).GetString(),
+                        Cod_inventario = fila.Cell(7).GetString(),
+                        Bienes_nacionales = fila.Cell(8).GetValue<int>(),
+                        Fecha_modificacion = fila.Cell(9).GetDateTime(),
+                        Propietario_equipo = fila.Cell(10).GetString(),
+                        Nombre_departamento = fila.Cell(11).GetString()
+                    };
+
+                    var departamento = await _context.departamento.FirstOrDefaultAsync(d => d.Nombre == dispositivoDTO.Nombre_departamento);
+                    if (departamento != null)
+                    {
+                        var dispositivo = new Dispositivo {
+                            Nombre_equipo = dispositivoDTO.Nombre_equipo,
+                            Marca = dispositivoDTO.Marca,
+                            Modelo = dispositivoDTO.Modelo,
+                            Estado = dispositivoDTO.Estado,
+                            Serial_no = dispositivoDTO.Serial_no,
+                            Cod_inventario = dispositivoDTO.Cod_inventario,
+                            Bienes_nacionales = dispositivoDTO.Bienes_nacionales,
+                            Fecha_modificacion = dispositivoDTO.Fecha_modificacion,
+                            Propietario_equipo = dispositivoDTO.Propietario_equipo,
+                            DepartamentoId = departamento.Id
+                        };
+                        dispositivos.Add(dispositivo);
+                    }
+                }
+                _context.AddRange(dispositivos);
+                await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName, "Importar", "Se importó un archivo .xlsx");
+
+                return Ok("Importación exitosa");
+            } catch (Exception ex)
+            {
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró lo que solicitó");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+                
+                else return StatusCode(500, $"Error al importar el archivo: {ex.Message}");
+            }
+        }
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] DispositivoCreateDTO dispositivo)
         {
@@ -298,25 +437,41 @@ namespace Inventario.Controllers
             }
             catch (Exception ex)
             {
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró lo que solicitó");
+
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+
+                else {
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
+                }
             }
         }
-        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
-        [HttpDelete("{id}")]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [HttpDelete("{id}")] 
         public async Task<ActionResult<Dispositivo>> Delete(int id)
         {
-            var dispositivo = await _context.Dispositivos.FindAsync(id);
-            if (dispositivo == null)
-            {
-                return NotFound();
+            try{
+                var dispositivo = await _context.Dispositivos.FindAsync(id);
+                if (dispositivo == null)
+                {
+                    return NotFound();
+                }
+
+                _context.Dispositivos.Remove(dispositivo);
+                await _context.SaveChangesAsync();
+                string userName = User.Identity.Name;
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Eliminar", "Se ha eliminado un dispositivo");
+
+                return dispositivo;
+            } catch (Exception ex) {
+                if (ex is UnauthorizedAccessException)
+                {
+                    return StatusCode(401, "No estás autorizado para esta acción");
+                }
+                else {
+                return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
+                }
             }
-
-            _context.Dispositivos.Remove(dispositivo);
-            await _context.SaveChangesAsync();
-            string userName = User.Identity.Name;
-            _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Eliminar", "Se ha eliminado un dispositivo");
-
-            return dispositivo;
         }
         [AllowAnonymous]
         [HttpGet("reporte", Name = "GenerarReporteDispositivos")]
@@ -454,7 +609,8 @@ namespace Inventario.Controllers
                     });
                 });
             }).GeneratePdf();
-
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Dispositivos", userName, "Reporte", "Se exportó un archivo .pdf");
             Stream stream = new MemoryStream(data);
             return File(stream, "application/pdf", "detalledispositivos.pdf");
         }

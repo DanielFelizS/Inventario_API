@@ -16,6 +16,9 @@ namespace Inventario.AutoMapperConfig
             CreateMap<DispositivoCreateDTO, Dispositivo>();
             CreateMap<DispositivoDTO, DispositivoCreateDTO>();
             CreateMap<DispositivoCreateDTO, DispositivoDTO>();
+            CreateMap<DispositivoImportDTO, DispositivoDTO>();
+            CreateMap<DispositivoDTO, DispositivoImportDTO>();
+
 
             CreateMap<PC, PCDTO>();
             CreateMap<PCDTO, PcCreateDTO>();

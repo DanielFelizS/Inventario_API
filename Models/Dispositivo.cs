@@ -52,19 +52,5 @@ namespace Inventario.Models
         // public PC Computer {get; set;}
 
         public virtual ICollection<PC> Computer { get; set; }
-
-        public void RegistrarAuditoria(DataContext context, string usuario)
-        {
-            var historialEntry = new Auditoria
-            {
-                Tabla = "Dispositivos",
-                Usuario = usuario,
-                Acción = "Agregar",
-                Descripción = "Se ha agregado un nuevo dispositivo",
-                Fecha = DateTime.Now
-            };
-            context.Set<Auditoria>().Add(historialEntry);
-            context.SaveChanges();
-        }
     }
 }

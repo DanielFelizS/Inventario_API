@@ -137,6 +137,7 @@ if (app.Environment.IsDevelopment())
     );
 }
 
+app.UseStatusCodePages();
 app.UseHttpsRedirection();
 app.UseCors("MyPolicy");
 app.UseRouting();

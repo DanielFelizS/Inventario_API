@@ -285,3 +285,11 @@ C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.
 C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\Laraue.EfCoreTriggers.dll
 C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\EntityFrameworkCore.Triggered.dll
 C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\EntityFrameworkCore.Triggered.Abstractions.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\ClosedXML.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\ExcelNumberFormat.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\Irony.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\SixLabors.Fonts.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\System.IO.Packaging.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\XLParser.dll
+C:\Users\A19A05048\Desktop\PROGRAMACION\.NET\API_REST\Inventario\bin\Debug\net8.0\dotnet-watch.dll

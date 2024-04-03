@@ -13,6 +13,7 @@ using Inventario.Authorization;
 using AutoMapper;
 using QuestPDF.Fluent;
 using OfficeOpenXml;
+using ClosedXML.Excel;
 
 namespace Inventario.Controllers
 {
@@ -143,20 +144,29 @@ namespace Inventario.Controllers
                 return NotFound();
             }
 
-            var pcDTO = new PCDTO
+            try {
+                var pcDTO = new PCDTO
+                {
+                    Id = computer.Id,
+                    Nombre_equipo = computer.Dispositivos.Nombre_equipo,
+                    RAM = computer.RAM,
+                    Disco_duro = computer.Disco_duro,
+                    Procesador = computer.Procesador,
+                    Ventilador = computer.Ventilador,
+                    FuentePoder = computer.FuentePoder,
+                    MotherBoard = computer.MotherBoard,
+                    Tipo_MotherBoard = computer.Tipo_MotherBoard
+                };
+                return pcDTO;
+            }
+            catch (Exception ex)
             {
-                Id = computer.Id,
-                Nombre_equipo = computer.Dispositivos.Nombre_equipo,
-                RAM = computer.RAM,
-                Disco_duro = computer.Disco_duro,
-                Procesador = computer.Procesador,
-                Ventilador = computer.Ventilador,
-                FuentePoder = computer.FuentePoder,
-                MotherBoard = computer.MotherBoard,
-                Tipo_MotherBoard = computer.Tipo_MotherBoard
-            };
+                if (ex is InvalidOperationException) return StatusCode(404, "No se encontró el id");
 
-            return pcDTO;
+                else if (ex is UnauthorizedAccessException) return StatusCode(401, "No estás autorizado para esta acción");
+                
+                else return StatusCode(500, $"Error al importar el archivo: {ex.Message}");
+            }
         }
         [HttpGet("exportar-excel")]
         public async Task<ActionResult> ExportarExcel(string filter = null)
@@ -208,6 +218,52 @@ namespace Inventario.Controllers
                 // Devolver el archivo de Excel como un FileContentResult
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Computadoras.xlsx");
             }
+        }
+        [HttpPost("importar-excel")]
+        public async Task<IActionResult> ImportExcel(IFormFile excel)
+        {
+            var workbook = new XLWorkbook(excel.OpenReadStream());
+            var hoja = workbook.Worksheet(1);
+            var primeraFilaUsada = hoja.FirstRowUsed().RangeAddress.FirstAddress.RowNumber;
+            var ultimaFilaUsada = hoja.LastRowUsed().RangeAddress.FirstAddress.RowNumber;
+            var computers = new List<PC>();
+
+            for (int i = primeraFilaUsada + 1; i <= ultimaFilaUsada; i++)
+            {
+                var fila = hoja.Row(i);
+                var computerDto = new PCDTO {
+                    Nombre_equipo = fila.Cell(2).GetString(),
+                    RAM = fila.Cell(3).GetString(),
+                    Disco_duro = fila.Cell(4).GetString(),
+                    Procesador = fila.Cell(5).GetString(),
+                    Ventilador = fila.Cell(6).GetString(),
+                    FuentePoder = fila.Cell(7).GetString(),
+                    MotherBoard = fila.Cell(8).GetString(),
+                    Tipo_MotherBoard = fila.Cell(9).GetString(),
+                };
+
+                var pc = await _context.Dispositivos.FirstOrDefaultAsync(d => d.Nombre_equipo == computerDto.Nombre_equipo);
+                if (pc != null)
+                {
+                    var computer = new PC {
+                        Equipo_Id = pc.Id,
+                        RAM = computerDto.RAM,
+                        Disco_duro = computerDto.Disco_duro,
+                        Procesador = computerDto.Procesador,
+                        Ventilador = computerDto.Ventilador,
+                        FuentePoder = computerDto.FuentePoder,
+                        Tipo_MotherBoard = computerDto.Tipo_MotherBoard
+                        // DepartamentoId = departamento.Id
+                    };
+                    computers.Add(computer);
+                }
+            }
+            _context.AddRange(computers);
+            await _context.SaveChangesAsync();
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Computadoras", userName, "Importar", "Se importó un archivo .xlsx");
+            
+            return Ok("Importación exitosa");
         }
         [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
@@ -399,7 +455,9 @@ namespace Inventario.Controllers
                     });
                 });
             }).GeneratePdf();
-
+            string userName = User.Identity.Name;
+            _auditoriaService.RegistrarAuditoria("Computadoras", userName, "Reporte", "Se exportó un archivo .pdf");
+            
             Stream stream = new MemoryStream(data);
             return File(stream, "application/pdf", "detallecomputadoras.pdf");
         }
