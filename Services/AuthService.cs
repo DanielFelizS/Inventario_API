@@ -66,6 +66,42 @@ namespace Inventario.Services
                 Message = token
             };
         }
+        public async Task<AuthServiceResponseDto> AddSuperAdminAsync(UpdatePermissionDto updatePermissionDto)
+        {
+            var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
+
+            if (user is null)
+                return new AuthServiceResponseDto()
+                {
+                    IsSucceed = false,
+                    Message = "Nombre de usuario incorrecto"
+                };
+
+            // Verificar si el rol existe antes de intentar agregarlo
+            if (!await _roleManager.RoleExistsAsync(StaticUserRoles.SUPERADMIN))
+            {
+                // El rol no existe, manejar el error apropiadamente
+                return new AuthServiceResponseDto()
+                {
+                    IsSucceed = false,
+                    Message = "El rol 'SUPERADMIN' no existe"
+                };
+            }
+
+            // El rol existe, agregar el usuario al rol
+            await _userManager.AddToRoleAsync(user, StaticUserRoles.SUPERADMIN);
+            await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.ADMIN);
+            await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.Lector);
+            await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.SOPORTE);
+
+            // User Superadmin = new User {UserName = "SuperAdmin"};
+
+            return new AuthServiceResponseDto()
+            {
+                IsSucceed = true,
+                Message = $"El usuario {updatePermissionDto.UserName} es ahora un superadmin"
+            };
+        }
         public async Task<AuthServiceResponseDto> AddAdminAsync(UpdatePermissionDto updatePermissionDto)
         {
             var user = await _userManager.FindByNameAsync(updatePermissionDto.UserName);
@@ -93,6 +129,7 @@ namespace Inventario.Services
             await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.Lector);
             await _userManager.RemoveFromRoleAsync(user, StaticUserRoles.SOPORTE);
 
+            // User Superadmin = new User {UserName = "SuperAdmin"};
 
             return new AuthServiceResponseDto()
             {

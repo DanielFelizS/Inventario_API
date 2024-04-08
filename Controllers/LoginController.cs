@@ -39,10 +39,33 @@ namespace Inventario.Controllers
         // Route For Seeding my roles to DB
         [HttpPost]
         [Route("seed-roles")]
-        public async Task<IActionResult> SeedRoles()
+        public async Task<ActionResult<User>> SeedRoles([FromBody] UpdatePermissionDto updatePermissionDto)
         {
             var seerRoles = await _authService.SeedRolesAsync();
+            
+            UserCreateDTO usuario = new UserCreateDTO {FirstName = "SuperAdmin", LastName = "SuperAdmin", 
+            UserName = "superadmin", Email = "no tiene", Password = "Fei234Bmcd_12"};
+            
+            UpdatePermissionDto Rol = new UpdatePermissionDto {UserName = "superadmin"};
+
+            var registerResult = await _authService.RegisterAsync(usuario);
+            var operationResult = await _authService.AddSuperAdminAsync(Rol);
+            // if(operationResult.IsSucceed) return Ok(operationResult);
+
+            if (registerResult.IsSucceed) 
+            {
+            User newUser = _mapper.Map<User>(usuario);
+
+            _context.usuarios.AddAsync(newUser);
+            await _context.SaveChangesAsync();
             return Ok(seerRoles);
+            return Ok(operationResult);
+            }
+            else
+            {
+                // return BadRequest(registerResult.Message);
+                return BadRequest(registerResult);
+            }
         }
         [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpGet(Name = "GetUsuarios")]
@@ -137,7 +160,7 @@ namespace Inventario.Controllers
 
             return user;
         }
-        // [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [Authorize(Roles = StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         [Route("registro")]
         public async Task<ActionResult<User>> Register([FromBody] UserCreateDTO userDto)
@@ -147,6 +170,7 @@ namespace Inventario.Controllers
             if (registerResult.IsSucceed) 
             {
                 User newUser = _mapper.Map<User>(userDto);
+
                 _context.usuarios.AddAsync(newUser);
                 await _context.SaveChangesAsync();
 
@@ -217,7 +241,7 @@ namespace Inventario.Controllers
                 return StatusCode(500, $"Ocurrió un error mientras se actualizaban los datos: {ex.Message}");
             }
         }
-        [Authorize(Roles = StaticUserRoles.SUPERADMIN)]
+        // [Authorize(Roles = StaticUserRoles.SUPERADMIN)]
         [HttpDelete("{id}")]
         public async Task<ActionResult<User>> Delete(string id)
         {

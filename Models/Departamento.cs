@@ -14,7 +14,7 @@ namespace Inventario.Models
         public string Descripción { get; set; }
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode=true)]
         [DataType(DataType.Date)]
-        public DateTime? Fecha_creacion { get; set; }
+        public DateTime? Fecha_creacion { get; set; } = DateTime.Now;
         [Required(ErrorMessage = "El nombre del encargado es obligatorio")]
         public string Encargado { get; set; }
         [Required(ErrorMessage = "Los dispositivos que tiene el departamento es obligatorio")]
