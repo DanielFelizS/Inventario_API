@@ -9,7 +9,7 @@ namespace Inventario.DTOs
         [JsonIgnore]
         public int Equipo_Id {get; set;}
         [NotMapped]
-        public string Nombre_equipo { get; set; }
+        public string Serial_no { get; set; }
         public string RAM { get; set; } = "No Tiene";
         public string Disco_duro { get; set; } = "No Tiene";
         public string Procesador { get; set; } = "No Tiene";

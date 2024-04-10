@@ -52,6 +52,7 @@ namespace Inventario.Controllers
                     Bienes_nacionales = dispositivo.Bienes_nacionales,
                     Fecha_modificacion = dispositivo.Fecha_modificacion,
                     Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_windows = dispositivo.Nombre_windows,
                     Nombre_departamento = departamento.Nombre
                 })
                 .Skip((pageNumber - 1) * pageSize)
@@ -96,8 +97,8 @@ namespace Inventario.Controllers
                     (d.Estado != null && d.Estado.Contains(search)) ||
                     (d.Propietario_equipo != null && d.Propietario_equipo.Contains(search)) ||
                     (d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search)) ||
-                    (d.departamento.Nombre != null && d.departamento.Nombre.Contains(search)));
-
+                    (d.departamento.Nombre != null && d.departamento.Nombre.Contains(search))
+                    );
             }
 
             // Realizar la consulta paginada
@@ -114,6 +115,7 @@ namespace Inventario.Controllers
                     Bienes_nacionales = dispositivo.Bienes_nacionales,
                     Fecha_modificacion = dispositivo.Fecha_modificacion,
                     Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_windows = dispositivo.Nombre_windows,
                     Nombre_departamento = dispositivo.departamento.Nombre
                 })
                 .Skip((pageNumber - 1) * pageSize)
@@ -166,6 +168,7 @@ namespace Inventario.Controllers
                     Bienes_nacionales = dispositivo.Bienes_nacionales,
                     Fecha_modificacion = dispositivo.Fecha_modificacion,
                     Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_windows = dispositivo.Nombre_windows,
                     Nombre_departamento = dispositivo.departamento.Nombre
                 });
 
@@ -180,7 +183,8 @@ namespace Inventario.Controllers
                 d.Cod_inventario != null && d.Cod_inventario.Contains(search) ||
                 d.Estado != null && d.Estado.Contains(search) ||
                 d.Bienes_nacionales.ToString() != null && d.Bienes_nacionales.ToString().Contains(search) ||
-                d.Propietario_equipo != null && d.Propietario_equipo.Contains(search)
+                d.Propietario_equipo != null && d.Propietario_equipo.Contains(search) ||
+                d.Nombre_windows != null && d.Nombre_windows.Contains(search)
                 );
             }
 
@@ -325,7 +329,7 @@ namespace Inventario.Controllers
                 return File(excelBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Equipos.xlsx");
             }
         }
-        // [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
+        [Authorize(Roles = StaticUserRoles.SOPORTE+ "," + StaticUserRoles.ADMIN + "," + StaticUserRoles.SUPERADMIN)]
         [HttpPost]
         public async Task<IActionResult> saveInformation([FromBody] DispositivoCreateDTO dispositivo)
         {

@@ -47,7 +47,7 @@ namespace Inventario.Controllers
                     (pc, dispositivo) => new PCDTO
                     {
                         Id = pc.Id,
-                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        Serial_no = dispositivo.Serial_no,
                         RAM = pc.RAM ?? "No Tiene",
                         Disco_duro = pc.Disco_duro ?? "No Tiene",
                         Procesador = pc.Procesador ?? "No Tiene",
@@ -90,7 +90,7 @@ namespace Inventario.Controllers
             // Filtrar por búsqueda si se proporciona
             if (!string.IsNullOrEmpty(search))
             {
-                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo != null && pc.Dispositivos.Nombre_equipo.Contains(search) ||
+                consulta = consulta.Where(pc => pc.Dispositivos.Serial_no != null && pc.Dispositivos.Serial_no.Contains(search) ||
                 pc.RAM != null && pc.RAM.Contains(search) ||
                 pc.Disco_duro != null && pc.Disco_duro.Contains(search));
             }
@@ -103,7 +103,7 @@ namespace Inventario.Controllers
                     (pc, dispositivo) => new PCDTO
                     {
                         Id = pc.Id,
-                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        Serial_no = dispositivo.Serial_no,
                         RAM = pc.RAM ?? "No Tiene",
                         Disco_duro = pc.Disco_duro ?? "No Tiene",
                         Procesador = pc.Procesador ?? "No Tiene",
@@ -148,7 +148,7 @@ namespace Inventario.Controllers
                 var pcDTO = new PCDTO
                 {
                     Id = computer.Id,
-                    Nombre_equipo = computer.Dispositivos.Nombre_equipo,
+                    Serial_no = computer.Dispositivos.Serial_no,
                     RAM = computer.RAM,
                     Disco_duro = computer.Disco_duro,
                     Procesador = computer.Procesador,
@@ -177,7 +177,7 @@ namespace Inventario.Controllers
 
             if (!string.IsNullOrEmpty(filter))
             {
-                consulta = consulta.Where(pc => pc.Dispositivos.Nombre_equipo != null && pc.Dispositivos.Nombre_equipo.Contains(filter) ||
+                consulta = consulta.Where(pc => pc.Dispositivos.Serial_no != null && pc.Dispositivos.Serial_no.Contains(filter) ||
                 pc.RAM != null && pc.RAM.Contains(filter) ||
                 pc.Disco_duro != null && pc.Disco_duro.Contains(filter) ||
                 pc.Procesador != null && pc.Procesador.Contains(filter) ||
@@ -192,7 +192,7 @@ namespace Inventario.Controllers
                     (pc, dispositivo) => new PCDTO
                     {
                         Id = pc.Id,
-                        Nombre_equipo = dispositivo.Nombre_equipo,
+                        Serial_no = dispositivo.Serial_no,
                         RAM = pc.RAM ?? "No Tiene",
                         Disco_duro = pc.Disco_duro ?? "No Tiene",
                         Procesador = pc.Procesador ?? "No Tiene",
@@ -232,7 +232,7 @@ namespace Inventario.Controllers
             {
                 var fila = hoja.Row(i);
                 var computerDto = new PCDTO {
-                    Nombre_equipo = fila.Cell(2).GetString(),
+                    Serial_no = fila.Cell(2).GetString(),
                     RAM = fila.Cell(3).GetString(),
                     Disco_duro = fila.Cell(4).GetString(),
                     Procesador = fila.Cell(5).GetString(),
@@ -242,7 +242,7 @@ namespace Inventario.Controllers
                     Tipo_MotherBoard = fila.Cell(9).GetString(),
                 };
 
-                var pc = await _context.Dispositivos.FirstOrDefaultAsync(d => d.Nombre_equipo == computerDto.Nombre_equipo);
+                var pc = await _context.Dispositivos.FirstOrDefaultAsync(d => d.Serial_no == computerDto.Serial_no);
                 if (pc != null)
                 {
                     var computer = new PC {
@@ -409,7 +409,7 @@ namespace Inventario.Controllers
                             tabla.Header(header =>
                             {
                                 header.Cell().Background("#257272").Text("Id").FontColor("#fff").FontSize(10);
-                                header.Cell().Background("#257272").Text("Nombre").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Serial no.").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("RAM").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Disco Duro").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Procesador").FontColor("#fff").FontSize(10);
@@ -422,7 +422,7 @@ namespace Inventario.Controllers
                             foreach (var Computer in computer)
                             {
                                 var id = Computer.PC.Id;
-                                var nombre = Computer.Dispositivo.Nombre_equipo;
+                                var serial = Computer.Dispositivo.Serial_no;
                                 var ram = Computer.PC.RAM;
                                 var discoDuro = Computer.PC.Disco_duro;
                                 var procesador = Computer.PC.Procesador;
@@ -432,7 +432,7 @@ namespace Inventario.Controllers
                                 var tipoMotherBoard = Computer.PC.Tipo_MotherBoard;
 
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
-                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(nombre).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(serial).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(ram).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(discoDuro).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(procesador).FontSize(10);
