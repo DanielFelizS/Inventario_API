@@ -44,6 +44,7 @@ namespace Inventario.Models
         [DataType(DataType.Date)]
         public DateTime? Fecha_modificacion { get; set; } = DateTime.Now;
         public string Propietario_equipo { get; set; }
+        public string Nombre_windows { get; set; } = "No tiene un windows instalado";
 
         // Relación entre el nombre del departamento y la clase Dispositivos
         public int DepartamentoId{ get; set; }

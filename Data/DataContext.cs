@@ -91,12 +91,6 @@ namespace Inventario.Data
 
             modelBuilder.Entity<Auditoria>()
                 .ToTable("historial");
-            
-            modelBuilder.Entity<Dispositivo>()
-                .ToTable("Dispositivos", options =>
-                {
-                    options.IsTemporal();
-                });
     }
 }
 }

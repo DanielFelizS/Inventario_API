@@ -24,6 +24,12 @@ namespace Inventario.Migrations
 
             modelBuilder.Entity("Inventario.Models.Auditoria", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<string>("Acción")
                         .HasColumnType("nvarchar(max)");
 
@@ -33,17 +39,13 @@ namespace Inventario.Migrations
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<string>("Tabla")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Usuario")
                         .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
 
                     b.ToTable("historial", (string)null);
                 });
@@ -122,15 +124,8 @@ namespace Inventario.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateTime>("PeriodEnd")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PeriodEnd");
-
-                    b.Property<DateTime>("PeriodStart")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PeriodStart");
+                    b.Property<string>("Nombre_windows")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Propietario_equipo")
                         .HasColumnType("nvarchar(max)");
@@ -155,18 +150,7 @@ namespace Inventario.Migrations
                         .IsUnique()
                         .HasFilter("[Serial_no] IS NOT NULL AND [Serial_no]<> 'No Tiene'");
 
-                    b.ToTable("Dispositivos", (string)null);
-
-                    b.ToTable(tb => tb.IsTemporal(ttb =>
-                            {
-                                ttb.UseHistoryTable("DispositivosHistory");
-                                ttb
-                                    .HasPeriodStart("PeriodStart")
-                                    .HasColumnName("PeriodStart");
-                                ttb
-                                    .HasPeriodEnd("PeriodEnd")
-                                    .HasColumnName("PeriodEnd");
-                            }));
+                    b.ToTable("Dispositivos");
                 });
 
             modelBuilder.Entity("Inventario.Models.PC", b =>

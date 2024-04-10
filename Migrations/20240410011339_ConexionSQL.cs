@@ -17,10 +17,10 @@ namespace Inventario.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "varchar(450)", nullable: false),
-                    Descripción = table.Column<string>(type: "varchar(100)", nullable: false),
-                    Fecha_creacion = table.Column<DateTime>(type: "date", nullable: true),
-                    Encargado = table.Column<string>(type: "varchar(450)", nullable: false)
+                    Nombre = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Descripción = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Fecha_creacion = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Encargado = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -33,11 +33,11 @@ namespace Inventario.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Tabla = table.Column<string>(type: "varchar(20)", nullable: true),
-                    Usuario = table.Column<string>(type: "varchar(max)", nullable: true),
-                    Acción = table.Column<string>(type: "varchar(20)", nullable: true),
-                    Descripción = table.Column<string>(type: "varchar(100)", nullable: true),
-                    Fecha = table.Column<DateTime>(type: "date", nullable: false)
+                    Tabla = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Usuario = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Acción = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Descripción = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Fecha = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -66,84 +66,18 @@ namespace Inventario.Migrations
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1")
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Nombre_equipo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Marca = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Modelo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Estado = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Serial_no = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Cod_inventario = table.Column<string>(type: "nvarchar(450)", nullable: true)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Bienes_nacionales = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Fecha_modificacion = table.Column<DateTime>(type: "date", nullable: true)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    Propietario_equipo = table.Column<string>(type: "varchar(60)", nullable: true)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Nombre_equipo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Marca = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Modelo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Estado = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false),
+                    Serial_no = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Cod_inventario = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    Bienes_nacionales = table.Column<int>(type: "int", nullable: false),
+                    Fecha_modificacion = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Propietario_equipo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Nombre_windows = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DepartamentoId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    PeriodEnd = table.Column<DateTime>(type: "datetime2", nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart"),
-                    PeriodStart = table.Column<DateTime>(type: "datetime2", nullable: false)
-                        .Annotation("SqlServer:IsTemporal", true)
-                        .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                        .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                        .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                        .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart")
                 },
                 constraints: table =>
                 {
@@ -154,12 +88,7 @@ namespace Inventario.Migrations
                         principalTable: "departamento",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("SqlServer:IsTemporal", true)
-                .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart");
+                });
 
             migrationBuilder.CreateTable(
                 name: "Computer",
@@ -293,12 +222,7 @@ namespace Inventario.Migrations
                 name: "usuarios");
 
             migrationBuilder.DropTable(
-                name: "Dispositivos")
-                .Annotation("SqlServer:IsTemporal", true)
-                .Annotation("SqlServer:TemporalHistoryTableName", "DispositivosHistory")
-                .Annotation("SqlServer:TemporalHistoryTableSchema", null)
-                .Annotation("SqlServer:TemporalPeriodEndColumnName", "PeriodEnd")
-                .Annotation("SqlServer:TemporalPeriodStartColumnName", "PeriodStart");
+                name: "Dispositivos");
 
             migrationBuilder.DropTable(
                 name: "departamento");

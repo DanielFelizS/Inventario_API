@@ -12,6 +12,7 @@ namespace Inventario.DTOs
         public int Bienes_nacionales { get; set; } = 0;
         public DateTime? Fecha_modificacion { get; set; }
         public string Propietario_equipo { get; set; }
+        public string Nombre_windows { get; set; } = "No tiene un windows instalado";
         public int DepartamentoId { get; set; }
     }
 }

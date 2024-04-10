@@ -227,6 +227,7 @@ namespace Inventario.Controllers
                 Bienes_nacionales = dispositivo.Bienes_nacionales,
                 Fecha_modificacion = dispositivo.Fecha_modificacion,
                 Propietario_equipo = dispositivo.Propietario_equipo,
+                Nombre_windows = dispositivo.Nombre_windows,
                 Nombre_departamento = dispositivo.departamento != null ? dispositivo.departamento.Nombre : null
             };
 
@@ -250,6 +251,7 @@ namespace Inventario.Controllers
                     Bienes_nacionales = dispositivo.Bienes_nacionales,
                     Fecha_modificacion = dispositivo.Fecha_modificacion,
                     Propietario_equipo = dispositivo.Propietario_equipo,
+                    Nombre_windows = dispositivo.Nombre_windows,
                     Nombre_departamento = dispositivo.departamento.Nombre
                 });
 
@@ -300,6 +302,7 @@ namespace Inventario.Controllers
                     dispositivo.Bienes_nacionales,
                     dispositivo.Fecha_modificacion,
                     dispositivo.Propietario_equipo,
+                    dispositivo.Nombre_windows,
                     Nombre_departamento = dispositivo.departamento.Nombre
                 })
                 .ToListAsync();
@@ -374,7 +377,8 @@ namespace Inventario.Controllers
                         Bienes_nacionales = fila.Cell(8).GetValue<int>(),
                         Fecha_modificacion = fila.Cell(9).GetDateTime(),
                         Propietario_equipo = fila.Cell(10).GetString(),
-                        Nombre_departamento = fila.Cell(11).GetString()
+                        Nombre_windows = fila.Cell(11).GetString(),
+                        Nombre_departamento = fila.Cell(12).GetString()
                     };
 
                     var departamento = await _context.departamento.FirstOrDefaultAsync(d => d.Nombre == dispositivoDTO.Nombre_departamento);
@@ -390,6 +394,7 @@ namespace Inventario.Controllers
                             Bienes_nacionales = dispositivoDTO.Bienes_nacionales,
                             Fecha_modificacion = dispositivoDTO.Fecha_modificacion,
                             Propietario_equipo = dispositivoDTO.Propietario_equipo,
+                            Nombre_windows = dispositivoDTO.Nombre_windows,
                             DepartamentoId = departamento.Id
                         };
                         dispositivos.Add(dispositivo);
@@ -432,7 +437,7 @@ namespace Inventario.Controllers
                 await _context.SaveChangesAsync();
                 string userName = User.Identity.Name;
 
-                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Editar", "Se ha editado un dispositivo");
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Editar", "Se ha editado un equipo");
                 return Ok("Se actualizó correctamente");
             }
             catch (Exception ex)
@@ -460,7 +465,7 @@ namespace Inventario.Controllers
                 _context.Dispositivos.Remove(dispositivo);
                 await _context.SaveChangesAsync();
                 string userName = User.Identity.Name;
-                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Eliminar", "Se ha eliminado un dispositivo");
+                _auditoriaService.RegistrarAuditoria("Dispositivos", userName , "Eliminar", "Se ha eliminado un equipo");
 
                 return dispositivo;
             } catch (Exception ex) {
@@ -482,12 +487,11 @@ namespace Inventario.Controllers
             // Filtrar por búsqueda si se proporciona
             if (!string.IsNullOrEmpty(filter))
             {
-                consulta = consulta.Where(d => d.Estado != null && d.Estado.Contains(filter));
+                consulta = consulta.Where(d => 
+                d.Nombre_equipo != null && d.Nombre_equipo.Contains(filter) ||
+                d.Estado != null && d.Estado.Contains(filter) ||
+                d.departamento.Nombre != null && d.departamento.Nombre.Contains(filter));
             }
-
-            // var dispositivos = await (from dispositivo in _context.Dispositivos
-            //     join departamento in _context.departamento on dispositivo.DepartamentoId equals departamento.Id
-            //     select new { Dispositivo = dispositivo, Departamento = departamento })
             var dispositivos= await consulta
                 .Select(d => new
                 {
@@ -553,6 +557,7 @@ namespace Inventario.Controllers
                                 columns.RelativeColumn(6);
                                 columns.RelativeColumn(6);
                                 columns.RelativeColumn(6);
+                                columns.RelativeColumn(6);
                             });
                             tabla.Header(header =>
                             {
@@ -566,6 +571,7 @@ namespace Inventario.Controllers
                                 header.Cell().Background("#257272").Text("Bienes").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Fecha").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Propietario").FontColor("#fff").FontSize(10);
+                                header.Cell().Background("#257272").Text("Nombre").FontColor("#fff").FontSize(10);
                                 header.Cell().Background("#257272").Text("Departamento").FontColor("#fff").FontSize(10);
                             });
 
@@ -581,6 +587,7 @@ namespace Inventario.Controllers
                                 var bienes = dispositivo.Dispositivo.Bienes_nacionales.ToString();
                                 var fecha = dispositivo.Dispositivo.Fecha_modificacion?.ToString("dd-MM-yy");
                                 var propietario = dispositivo.Dispositivo.Propietario_equipo;
+                                var windows = dispositivo.Dispositivo.Nombre_windows;
                                 var Nombre_departamento = dispositivo.Dispositivo.departamento.Nombre;
 
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(id).FontSize(10);
@@ -593,6 +600,7 @@ namespace Inventario.Controllers
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(bienes).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(fecha).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(propietario).FontSize(10);
+                                tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(windows).FontSize(10);
                                 tabla.Cell().BorderColor("#D9D9D9").Padding(2).Text(Nombre_departamento).FontSize(10);
                             }
                         });
