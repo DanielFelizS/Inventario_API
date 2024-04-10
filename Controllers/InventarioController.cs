@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
+using Inventario.Services;
 using Inventario.Authorization;
 using AutoMapper;
 using QuestPDF.Fluent;

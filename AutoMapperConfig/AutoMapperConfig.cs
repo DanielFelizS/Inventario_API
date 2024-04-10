@@ -8,9 +8,11 @@ namespace Inventario.AutoMapperConfig
     {
         public AutoMapperConfigProfile()
         {
+            // Departamento
             CreateMap<Departamento, DepartamentoDTO>();
             CreateMap<DepartamentoDTO, Departamento>();
 
+            // Dispositivos
             CreateMap<Dispositivo, DispositivoDTO>();
             CreateMap<DispositivoDTO, Dispositivo>();
             CreateMap<DispositivoCreateDTO, Dispositivo>();
@@ -19,13 +21,14 @@ namespace Inventario.AutoMapperConfig
             CreateMap<DispositivoImportDTO, DispositivoDTO>();
             CreateMap<DispositivoDTO, DispositivoImportDTO>();
 
-
+            // Computadoras
             CreateMap<PC, PCDTO>();
             CreateMap<PCDTO, PcCreateDTO>();
             CreateMap<PCDTO, PC>();
             CreateMap<PcCreateDTO, PCDTO>();
             CreateMap<PcCreateDTO, PC>();
-            
+
+            // Usuarios
             CreateMap<UserDTO, User>();
             CreateMap<User, UserDTO>();
             CreateMap<UserCreateDTO, UserDTO>();

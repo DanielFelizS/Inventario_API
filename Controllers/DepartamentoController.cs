@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Inventario.Models;
 using Inventario.DTOs;
 using Inventario.Data;
+using Inventario.Services;
 using Inventario.Authorization;
 using AutoMapper;
 using QuestPDF.Fluent;
@@ -25,7 +26,6 @@ namespace Inventario.Controllers
         private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _host;
         private readonly AuditoriaService _auditoriaService;
-        int number = 0;
 
         public DepartamentoController(ILogger<DepartamentoController> logger, DataContext context, IMapper mapper,  IWebHostEnvironment host, AuditoriaService auditoriaService, IHttpContextAccessor httpContextAccessor)
         {
