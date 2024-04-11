@@ -18,7 +18,7 @@ using ClosedXML.Excel;
 
 namespace Inventario.Controllers
 {
-    [Route("api/departamento")]
+    [Route("api/departamentos")]
     public class DepartamentoController : Controller
     {
         private readonly ILogger<DepartamentoController> _logger;

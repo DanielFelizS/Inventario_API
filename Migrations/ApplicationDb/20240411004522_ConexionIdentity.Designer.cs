@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Inventario.Migrations.ApplicationDb
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240325144424_ConexionIdentity")]
+    [Migration("20240411004522_ConexionIdentity")]
     partial class ConexionIdentity
     {
         /// <inheritdoc />

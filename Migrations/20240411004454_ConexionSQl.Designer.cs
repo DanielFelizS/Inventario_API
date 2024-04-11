@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Inventario.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240410011339_ConexionSQL")]
-    partial class ConexionSQL
+    [Migration("20240411004454_ConexionSQl")]
+    partial class ConexionSQl
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

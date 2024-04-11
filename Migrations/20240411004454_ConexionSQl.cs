@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Inventario.Migrations
 {
     /// <inheritdoc />
-    public partial class ConexionSQL : Migration
+    public partial class ConexionSQl : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
